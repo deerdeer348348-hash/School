@@ -6,7 +6,6 @@
 <title>Libro de Pagos Escolares</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --ink:#1F3A34;
@@ -150,165 +149,34 @@
 </style>
 </head>
 <body>
-<div id="app"><div style="padding:40px 18px;text-align:center;color:#6E6857;font-family:'Inter',sans-serif;">Cargando datos…</div></div>
+<div id="app"></div>
 
 <script>
 /* =========================================================
-   DATOS Y ALMACENAMIENTO (Supabase)
+   DATOS Y ALMACENAMIENTO
 ========================================================= */
-// 1) Pega aquí la Project URL y la anon public key de tu proyecto Supabase
-//    (Project Settings → API en supabase.com).
-const SUPABASE_URL='https://cexfnnswnhdnkftqviks.supabase.co';
-const SUPABASE_ANON_KEY='sb_publishable_8GsOIojzPv3DW7ZDAyQQmw_v1sxEdDl';
-
-const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const DB_KEY='ge_db_v2';
 
 function defaultDB(){
   return {
     students:[],
-    payments:{},      // { studentId: { 'YYYY-MM': { weekIndex: {status,montoEntregado,cambio} } } }
+    payments:{},      // { studentId: { 'YYYY-MM': { weekIndex: 'requested'|'validated' } } }
     expenses:[],       // { id, nombre, fecha, monto }
-    events:[],         // { id, nombre, fecha, montoTotal, pagos:{studentId:{status,montoEntregado,cambio}} }
+    events:[],         // { id, nombre, fecha, montoTotal, pagos:{studentId:'requested'|'validated'} }
     settings:{ weeklyAmount:20, adminPassword:'admin123', adminWhatsapp:'' }
   };
 }
-let db=defaultDB();
-let dbReady=false;
-
-async function loadDB(){
-  const [studentsRes,paymentsRes,expensesRes,eventsRes,eventPaymentsRes,settingsRes]=await Promise.all([
-    sb.from('students').select('*').order('created_at',{ascending:true}),
-    sb.from('payments').select('*'),
-    sb.from('expenses').select('*'),
-    sb.from('events').select('*'),
-    sb.from('event_payments').select('*'),
-    sb.from('settings').select('*').eq('id',1).maybeSingle()
-  ]);
-  const errs=[studentsRes,paymentsRes,expensesRes,eventsRes,eventPaymentsRes,settingsRes].filter(r=>r.error);
-  if(errs.length){
-    console.error(errs);
-    document.getElementById('app').innerHTML=`<div style="padding:30px 18px;color:#D9694A;font-family:sans-serif;">
-      No se pudo conectar con Supabase. Revisa que SUPABASE_URL y SUPABASE_ANON_KEY estén bien puestas
-      y que las tablas existan.<br><br><small>${errs.map(e=>e.error.message).join('<br>')}</small></div>`;
-    throw new Error('supabase load failed');
-  }
-
-  const next=defaultDB();
-  next.students=(studentsRes.data||[]).map(s=>({
-    id:s.id, nombre:s.nombre, numLista:s.num_lista, nombrePadre:s.nombre_padre, whatsapp:s.whatsapp, createdAt:s.created_at
-  }));
-  (paymentsRes.data||[]).forEach(p=>{
-    if(!next.payments[p.student_id]) next.payments[p.student_id]={};
-    if(!next.payments[p.student_id][p.month_key]) next.payments[p.student_id][p.month_key]={};
-    next.payments[p.student_id][p.month_key][p.week_index]={
-      status:p.status, montoEntregado:p.monto_entregado, cambio:p.cambio
-    };
-  });
-  next.expenses=(expensesRes.data||[]).map(e=>({id:e.id,nombre:e.nombre,fecha:e.fecha,monto:e.monto}));
-  next.events=(eventsRes.data||[]).map(e=>({id:e.id,nombre:e.nombre,fecha:e.fecha,montoTotal:e.monto_total,pagos:{}}));
-  (eventPaymentsRes.data||[]).forEach(ep=>{
-    const ev=next.events.find(e=>e.id===ep.event_id);
-    if(ev) ev.pagos[ep.student_id]={status:ep.status,montoEntregado:ep.monto_entregado,cambio:ep.cambio};
-  });
-  if(settingsRes.data){
-    next.settings={
-      weeklyAmount:Number(settingsRes.data.weekly_amount),
-      adminPassword:settingsRes.data.admin_password,
-      adminWhatsapp:settingsRes.data.admin_whatsapp||''
-    };
-  }
-  db=next;
-}
-
-function saveDB(){ render(); } // los cambios ya se guardan en Supabase en cada acción; esto solo re-renderiza
-
-function subscribeRealtime(){
-  sb.channel('ge-db-changes')
-    .on('postgres_changes',{event:'*',schema:'public',table:'students'},refreshFromServer)
-    .on('postgres_changes',{event:'*',schema:'public',table:'payments'},refreshFromServer)
-    .on('postgres_changes',{event:'*',schema:'public',table:'expenses'},refreshFromServer)
-    .on('postgres_changes',{event:'*',schema:'public',table:'events'},refreshFromServer)
-    .on('postgres_changes',{event:'*',schema:'public',table:'event_payments'},refreshFromServer)
-    .on('postgres_changes',{event:'*',schema:'public',table:'settings'},refreshFromServer)
-    .subscribe();
-}
-let refreshQueued=false;
-async function refreshFromServer(){
-  if(refreshQueued) return;
-  refreshQueued=true;
-  setTimeout(async()=>{ refreshQueued=false; await loadDB(); render(); },250);
-}
-
-async function initApp(){
+function loadDB(){
   try{
-    await loadDB();
-    dbReady=true;
-    subscribeRealtime();
-    render();
-  }catch(e){ /* pantalla de error ya mostrada en loadDB */ }
+    const raw=localStorage.getItem(DB_KEY);
+    if(raw) return Object.assign(defaultDB(),JSON.parse(raw));
+  }catch(e){}
+  return defaultDB();
 }
+let db=loadDB();
+function saveDB(){ localStorage.setItem(DB_KEY, JSON.stringify(db)); render(); }
 
 function uid(){ return 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
-
-/* ---- escrituras hacia Supabase ---- */
-async function sbInsertStudent(student){
-  const {data,error}=await sb.from('students').insert({
-    nombre:student.nombre, num_lista:student.numLista, nombre_padre:student.nombrePadre, whatsapp:student.whatsapp
-  }).select().single();
-  if(error){ alert('Error al registrar alumno: '+error.message); return null; }
-  return data.id;
-}
-async function sbUpdateStudent(s){
-  const {error}=await sb.from('students').update({
-    nombre:s.nombre, num_lista:s.numLista, nombre_padre:s.nombrePadre, whatsapp:s.whatsapp
-  }).eq('id',s.id);
-  if(error) alert('Error al guardar alumno: '+error.message);
-}
-async function sbDeleteStudent(id){
-  const {error}=await sb.from('students').delete().eq('id',id);
-  if(error) alert('Error al eliminar alumno: '+error.message);
-}
-async function sbUpsertPayment(studentId,monthKey,weekIndex,status,montoEntregado,cambio){
-  const {error}=await sb.from('payments').upsert({
-    student_id:studentId, month_key:monthKey, week_index:weekIndex,
-    status, monto_entregado:montoEntregado??null, cambio:cambio??null
-  },{onConflict:'student_id,month_key,week_index'});
-  if(error) alert('Error al guardar el pago: '+error.message);
-}
-async function sbInsertExpense(ex){
-  const {data,error}=await sb.from('expenses').insert({nombre:ex.nombre,fecha:ex.fecha||null,monto:ex.monto}).select().single();
-  if(error){ alert('Error al registrar gasto: '+error.message); return null; }
-  return data.id;
-}
-async function sbUpdateExpense(ex){
-  const {error}=await sb.from('expenses').update({nombre:ex.nombre,fecha:ex.fecha||null,monto:ex.monto}).eq('id',ex.id);
-  if(error) alert('Error al guardar gasto: '+error.message);
-}
-async function sbDeleteExpense(id){
-  const {error}=await sb.from('expenses').delete().eq('id',id);
-  if(error) alert('Error al eliminar gasto: '+error.message);
-}
-async function sbInsertEvent(ev){
-  const {data,error}=await sb.from('events').insert({nombre:ev.nombre,fecha:ev.fecha||null,monto_total:ev.montoTotal}).select().single();
-  if(error){ alert('Error al crear evento: '+error.message); return null; }
-  return data.id;
-}
-async function sbDeleteEvent(id){
-  const {error}=await sb.from('events').delete().eq('id',id);
-  if(error) alert('Error al eliminar evento: '+error.message);
-}
-async function sbUpsertEventPayment(eventId,studentId,status,montoEntregado,cambio){
-  const {error}=await sb.from('event_payments').upsert({
-    event_id:eventId, student_id:studentId, status, monto_entregado:montoEntregado??null, cambio:cambio??null
-  },{onConflict:'event_id,student_id'});
-  if(error) alert('Error al guardar el pago del evento: '+error.message);
-}
-async function sbUpdateSettings(settings){
-  const {error}=await sb.from('settings').update({
-    weekly_amount:settings.weeklyAmount, admin_password:settings.adminPassword, admin_whatsapp:settings.adminWhatsapp
-  }).eq('id',1);
-  if(error) alert('Error al guardar configuración: '+error.message);
-}
 function money(n){ return '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function digitsOnly(s){ return (s||'').replace(/\D/g,''); }
 function waLink(phone,text){ return 'https://wa.me/'+digitsOnly(phone)+'?text='+encodeURIComponent(text); }
@@ -360,15 +228,14 @@ function studentPaidWeeksCount(studentId){
   const p=db.payments[studentId]||{};
   let count=0;
   Object.values(p).forEach(monthObj=>{
-    Object.values(monthObj).forEach(entry=>{ if(entry&&entry.status==='validated') count++; });
+    Object.values(monthObj).forEach(status=>{ if(status==='validated') count++; });
   });
   return count;
 }
 function studentTotalPaid(studentId){
   let total=studentPaidWeeksCount(studentId)*db.settings.weeklyAmount;
   db.events.forEach(ev=>{
-    const entry=ev.pagos&&ev.pagos[studentId];
-    if(entry && entry.status==='validated') total+=eventCuota(ev);
+    if(ev.pagos && ev.pagos[studentId]==='validated') total+=eventCuota(ev);
   });
   return total;
 }
@@ -386,9 +253,9 @@ function pendingValidationsCount(){
   let count=0;
   db.students.forEach(s=>{
     const p=db.payments[s.id]||{};
-    Object.values(p).forEach(monthObj=>Object.values(monthObj).forEach(entry=>{ if(entry&&entry.status==='requested') count++; }));
+    Object.values(p).forEach(monthObj=>Object.values(monthObj).forEach(st=>{ if(st==='requested') count++; }));
   });
-  db.events.forEach(ev=>{ Object.values(ev.pagos||{}).forEach(entry=>{ if(entry&&entry.status==='requested') count++; }); });
+  db.events.forEach(ev=>{ Object.values(ev.pagos||{}).forEach(st=>{ if(st==='requested') count++; }); });
   return count;
 }
 
@@ -404,7 +271,6 @@ let ui={
   showExpenseForm:false,
   editExpenseId:null,
   showEventForm:false,
-  showStudentForm:false,
   editStudentId:null,
   loginError:''
 };
@@ -451,8 +317,7 @@ function renderHomeMonthTable(idx){
     rows=db.students.map(s=>{
       const isMine=s.id===myId;
       const cells=weeks.map((wd,wi)=>{
-        const entry=db.payments[s.id]&&db.payments[s.id][key]&&db.payments[s.id][key][wi];
-        const status=(entry&&entry.status)||'unpaid';
+        const status=(db.payments[s.id]&&db.payments[s.id][key]&&db.payments[s.id][key][wi])||'unpaid';
         const selected=isMine&&isCurrent&&status==='unpaid'&&ui.selection.has(wi);
         let cls='mini-circle';
         let label='';
@@ -483,8 +348,7 @@ function renderEventsTable(){
     rows=db.students.map(s=>{
       const isMine=s.id===myId;
       const cells=db.events.map(ev=>{
-        const entry=ev.pagos&&ev.pagos[s.id];
-        const status=(entry&&entry.status)||'unpaid';
+        const status=(ev.pagos&&ev.pagos[s.id])||'unpaid';
         let cls='mini-circle'; let label='';
         if(status==='validated'){ cls+=' validated'; label='✓'; }
         else if(status==='requested'){ cls+=' requested'; label='…'; }
@@ -582,7 +446,7 @@ function toggleMonth(key){
 function bindHome(){
   const btnReq=document.getElementById('btn-request-payment');
   if(btnReq){
-    btnReq.onclick=async()=>{
+    btnReq.onclick=()=>{
       const sid=getMyStudentId();
       const student=db.students.find(s=>s.id===sid);
       const months=schoolMonths();
@@ -592,12 +456,11 @@ function bindHome(){
       if(!db.payments[sid]) db.payments[sid]={};
       if(!db.payments[sid][key]) db.payments[sid][key]={};
       const selectedList=[...ui.selection].sort((a,b)=>a-b);
-      selectedList.forEach(wi=>{ db.payments[sid][key][wi]={status:'requested'}; });
+      selectedList.forEach(wi=>{ db.payments[sid][key][wi]='requested'; });
       const amount=selectedList.length*db.settings.weeklyAmount;
       const weekLabels=selectedList.map(wi=>shortDate(weeks[wi])).join(', ');
       ui.selection=new Set();
       saveDB();
-      await Promise.all(selectedList.map(wi=>sbUpsertPayment(sid,key,wi,'requested',null,null)));
       const msg=`Hola, soy ${student.nombrePadre}, padre/tutor de ${student.nombre} (lista ${student.numLista}). `+
         `Solicito validar el pago de ${monthLabel(mo.year,mo.month)} - semanas: ${weekLabels}. Monto: ${money(amount)}.`;
       if(db.settings.adminWhatsapp){
@@ -609,15 +472,14 @@ function bindHome(){
   }
 }
 
-async function requestEventPayment(eventId){
+function requestEventPayment(eventId){
   const sid=getMyStudentId();
   if(!sid){ alert('Regístrate primero en la pestaña Registro.'); return; }
   const student=db.students.find(s=>s.id===sid);
   const ev=db.events.find(e=>e.id===eventId);
   if(!ev.pagos) ev.pagos={};
-  ev.pagos[sid]={status:'requested'};
+  ev.pagos[sid]='requested';
   saveDB();
-  await sbUpsertEventPayment(eventId,sid,'requested',null,null);
   const msg=`Hola, soy ${student.nombrePadre}, padre/tutor de ${student.nombre} (lista ${student.numLista}). `+
     `Solicito validar el pago del evento "${ev.nombre}". Monto: ${money(eventCuota(ev))}.`;
   if(db.settings.adminWhatsapp){
@@ -665,7 +527,7 @@ function renderRegistro(){
 function bindRegistro(){
   const form=document.getElementById('form-register');
   if(!form) return;
-  form.onsubmit=async(e)=>{
+  form.onsubmit=(e)=>{
     e.preventDefault();
     const nombre=document.getElementById('r-nombre').value.trim();
     const lista=document.getElementById('r-lista').value.trim();
@@ -675,12 +537,9 @@ function bindRegistro(){
       document.getElementById('r-error').textContent='Completa todos los campos.';
       return;
     }
-    const submitBtn=form.querySelector('button[type="submit"]');
-    submitBtn.disabled=true; submitBtn.textContent='Guardando…';
-    const id=await sbInsertStudent({nombre,numLista:lista,nombrePadre:padre,whatsapp});
-    if(!id){ submitBtn.disabled=false; submitBtn.textContent='Guardar registro'; return; }
-    db.students.push({id,nombre,numLista:lista,nombrePadre:padre,whatsapp,createdAt:Date.now()});
-    setMyStudentId(id);
+    const student={ id:uid(), nombre, numLista:lista, nombrePadre:padre, whatsapp, createdAt:Date.now() };
+    db.students.push(student);
+    setMyStudentId(student.id);
     saveDB();
     goHome();
   };
@@ -768,23 +627,15 @@ function renderAdminPagos(){
   const options=months.map((m,i)=>`<option value="${i}" ${i===idx?'selected':''}>${monthLabel(m.year,m.month)}</option>`).join('');
 
   let rows='';
-  let detailRows='';
   if(db.students.length===0){
     rows=`<tr><td colspan="${weeks.length+2}"><div class="empty">Aún no hay alumnos registrados.</div></td></tr>`;
   } else {
     rows=db.students.map(s=>{
       const cells=weeks.map((wd,wi)=>{
-        const entry=db.payments[s.id]&&db.payments[s.id][key]&&db.payments[s.id][key][wi];
-        const status=(entry&&entry.status)||'unpaid';
+        const status=(db.payments[s.id]&&db.payments[s.id][key]&&db.payments[s.id][key][wi])||'unpaid';
         const cls=status==='validated'?'validated':(status==='requested'?'requested':'');
         const label=status==='validated'?'✓':(status==='requested'?'…':'');
-        if(status==='validated'&&entry.montoEntregado!=null){
-          const dif=Number(entry.montoEntregado)-db.settings.weeklyAmount;
-          const difTxt=dif>0?`Sobra ${money(dif)}`:(dif<0?`Falta ${money(-dif)}`:'Exacto');
-          detailRows+=`<div class="list-row"><div><div style="font-weight:600;">${s.nombre}</div><div class="meta">Semana del ${shortDate(wd)}</div></div><div class="amt">Entregó ${money(entry.montoEntregado)} · ${difTxt}</div></div>`;
-        }
-        const circleTitle=status==='validated'?('Entregó '+money(entry.montoEntregado)):'';
-        return `<td><div class="mini-circle clickable ${cls}" onclick="cycleAdminWeek('${s.id}','${key}',${wi})" title="${circleTitle}">${label}</div></td>`;
+        return `<td><div class="mini-circle clickable ${cls}" onclick="cycleAdminWeek('${s.id}','${key}',${wi})">${label}</div></td>`;
       }).join('');
       return `<tr>
         <td class="name-cell">${s.nombre}<div class="meta" style="font-weight:400;">Lista ${s.numLista}</div></td>
@@ -798,7 +649,7 @@ function renderAdminPagos(){
   return `
   <div class="card">
     <h2>Pagos semanales</h2>
-    <p class="desc">Toca un círculo para cambiar su estado: sin pagar → esperando validación → al validar, te pedirá el monto entregado. Cuota semanal actual: <strong>${money(db.settings.weeklyAmount)}</strong> (edítala en Ajustes).</p>
+    <p class="desc">Toca un círculo para cambiar su estado: sin pagar → esperando validación → pagada. Cuota semanal actual: <strong>${money(db.settings.weeklyAmount)}</strong> (edítala en Ajustes).</p>
     <label style="font-size:12.5px;color:var(--muted);font-weight:600;">Mes</label>
     <select id="admin-month-select" style="padding:8px 10px;border-radius:8px;border:1px solid var(--line);margin-bottom:16px;">${options}</select>
     <div class="table-scroll">
@@ -807,36 +658,15 @@ function renderAdminPagos(){
         <tbody>${rows}</tbody>
       </table>
     </div>
-  </div>
-  <div class="card">
-    <h2>Detalle de pagos validados (${monthLabel(mo.year,mo.month)})</h2>
-    ${detailRows||'<div class="empty">Aún no hay pagos validados este mes.</div>'}
   </div>`;
 }
-async function cycleAdminWeek(studentId,key,wi){
+function cycleAdminWeek(studentId,key,wi){
   if(!db.payments[studentId]) db.payments[studentId]={};
   if(!db.payments[studentId][key]) db.payments[studentId][key]={};
-  const entry=db.payments[studentId][key][wi]||{status:'unpaid'};
-  const cur=entry.status||'unpaid';
-  if(cur==='unpaid'){
-    db.payments[studentId][key][wi]={status:'requested'};
-    saveDB();
-    await sbUpsertPayment(studentId,key,wi,'requested',null,null);
-  } else if(cur==='requested'){
-    const debe=db.settings.weeklyAmount;
-    const input=prompt('¿Con cuánto pagó esta semana? (adeuda '+money(debe)+')');
-    if(input===null) return;
-    const montoEntregado=parseFloat(input);
-    if(isNaN(montoEntregado)){ alert('Ingresa un monto válido.'); return; }
-    const cambio=montoEntregado-debe;
-    db.payments[studentId][key][wi]={status:'validated',montoEntregado,cambio};
-    saveDB();
-    await sbUpsertPayment(studentId,key,wi,'validated',montoEntregado,cambio);
-  } else {
-    db.payments[studentId][key][wi]={status:'unpaid'};
-    saveDB();
-    await sbUpsertPayment(studentId,key,wi,'unpaid',null,null);
-  }
+  const cur=db.payments[studentId][key][wi]||'unpaid';
+  const next=cur==='unpaid'?'requested':(cur==='requested'?'validated':'unpaid');
+  db.payments[studentId][key][wi]=next;
+  saveDB();
 }
 function confirmPaymentWhatsapp(studentId,key){
   const s=db.students.find(x=>x.id===studentId);
@@ -844,7 +674,7 @@ function confirmPaymentWhatsapp(studentId,key){
   const mo=months.find(m=>monthKey(m.year,m.month)===key);
   const weeks=weeksOfMonth(mo.year,mo.month);
   const payMonth=(db.payments[studentId]&&db.payments[studentId][key])||{};
-  const validatedWeeks=Object.keys(payMonth).filter(wi=>payMonth[wi]&&payMonth[wi].status==='validated').map(wi=>shortDate(weeks[wi]));
+  const validatedWeeks=Object.keys(payMonth).filter(wi=>payMonth[wi]==='validated').map(wi=>shortDate(weeks[wi]));
   if(validatedWeeks.length===0){ alert('Este alumno no tiene semanas validadas en '+monthLabel(mo.year,mo.month)+'.'); return; }
   const msg=`Hola ${s.nombrePadre}, se confirma el pago de ${s.nombre} (lista ${s.numLista}) correspondiente a ${monthLabel(mo.year,mo.month)} - semanas: ${validatedWeeks.join(', ')}. ¡Gracias!`;
   if(!s.whatsapp){ alert('Este alumno no tiene número de WhatsApp registrado.'); return; }
@@ -883,27 +713,9 @@ function renderAdminAlumnos(){
       </div>`;
     }).join('');
   }
-  return `<div class="card">
-    <h2>Alumnos registrados</h2>
-    <p class="desc">Solo el administrador puede modificar los datos de un alumno una vez registrado.</p>
-    ${rows}
-    <div style="margin-top:14px;">
-      ${ui.showStudentForm?`
-        <form class="inline-form" id="form-new-student">
-          <div><label>Nombre del alumno</label><input type="text" id="as-nombre" required placeholder="Nombre completo"></div>
-          <div><label>Número de lista</label><input type="number" id="as-lista" required min="1"></div>
-          <div><label>Nombre del padre / tutor</label><input type="text" id="as-padre" required placeholder="Nombre completo"></div>
-          <div><label>WhatsApp del padre / tutor</label><input type="tel" id="as-whatsapp" required placeholder="10 dígitos + lada"></div>
-          <div class="row-actions">
-            <button type="submit" class="btn small gold">Registrar alumno</button>
-            <button type="button" class="icon-btn" id="btn-cancel-student">Cancelar</button>
-          </div>
-        </form>`:`<button class="btn outline" id="btn-show-student-form">+ Registrar alumno</button>`}
-    </div>
-    <div class="hint">Un alumno registrado por ti aquí no queda ligado automáticamente al celular del padre; si el padre también se registra por su cuenta en la pestaña Registro, puede crear un duplicado. Si prefieres, dile al padre que no se registre y regístralo solo tú desde aquí.</div>
-  </div>`;
+  return `<div class="card"><h2>Alumnos registrados</h2><p class="desc">Solo el administrador puede modificar los datos de un alumno una vez registrado.</p>${rows}</div>`;
 }
-async function saveStudentEdit(e,id){
+function saveStudentEdit(e,id){
   e.preventDefault();
   const f=e.target;
   const s=db.students.find(x=>x.id===id);
@@ -913,16 +725,14 @@ async function saveStudentEdit(e,id){
   s.whatsapp=f.whatsapp.value.trim();
   ui.editStudentId=null;
   saveDB();
-  await sbUpdateStudent(s);
   return false;
 }
-async function deleteStudent(id){
+function deleteStudent(id){
   if(!confirm('¿Eliminar a este alumno y su historial de pagos?')) return;
   db.students=db.students.filter(s=>s.id!==id);
   delete db.payments[id];
   db.events.forEach(ev=>{ if(ev.pagos) delete ev.pagos[id]; });
   saveDB();
-  await sbDeleteStudent(id); // los pagos relacionados se borran en cascada en Supabase
 }
 
 function renderAdminGastos(){
@@ -972,20 +782,18 @@ function renderAdminGastos(){
     </div>
   </div>`;
 }
-async function saveExpenseEdit(e,id){
+function saveExpenseEdit(e,id){
   e.preventDefault();
   const f=e.target;
   const ex=db.expenses.find(x=>x.id===id);
   ex.nombre=f.nombre.value.trim(); ex.fecha=f.fecha.value; ex.monto=parseFloat(f.monto.value)||0;
   ui.editExpenseId=null; saveDB();
-  await sbUpdateExpense(ex);
   return false;
 }
-async function deleteExpense(id){
+function deleteExpense(id){
   if(!confirm('¿Eliminar este gasto?')) return;
   db.expenses=db.expenses.filter(e=>e.id!==id);
   saveDB();
-  await sbDeleteExpense(id);
 }
 
 function renderAdminEventos(){
@@ -996,18 +804,11 @@ function renderAdminEventos(){
     rows=db.events.map(ev=>{
       const cuota=eventCuota(ev);
       const studentRows=db.students.length? db.students.map(s=>{
-        const entry=ev.pagos&&ev.pagos[s.id];
-        const status=(entry&&entry.status)||'unpaid';
+        const status=(ev.pagos&&ev.pagos[s.id])||'unpaid';
         const cls=status==='validated'?'validated':(status==='requested'?'requested':'');
-        let label=status==='validated'?'✓ Pagado':(status==='requested'?'Esperando validación':'Sin pagar');
-        let montoLine='';
-        if(status==='validated'&&entry.montoEntregado!=null){
-          const dif=Number(entry.montoEntregado)-eventCuota(ev);
-          const difTxt=dif>0?`Sobra ${money(dif)}`:(dif<0?`Falta ${money(-dif)}`:'Exacto');
-          montoLine=`<div class="meta">Entregó ${money(entry.montoEntregado)} · ${difTxt}</div>`;
-        }
+        const label=status==='validated'?'✓ Pagado':(status==='requested'?'Esperando validación':'Sin pagar');
         return `<div class="list-row">
-          <div>${s.nombre} <span class="meta">(lista ${s.numLista})</span>${montoLine}</div>
+          <div>${s.nombre} <span class="meta">(lista ${s.numLista})</span></div>
           <div class="row-actions">
             <span class="mini-circle clickable ${cls}" onclick="cycleEventPayment('${ev.id}','${s.id}')" title="${label}">${status==='validated'?'✓':(status==='requested'?'…':'')}</span>
             <button class="icon-btn" onclick="confirmEventWhatsapp('${ev.id}','${s.id}')">WhatsApp</button>
@@ -1044,45 +845,25 @@ function renderAdminEventos(){
   </div>
   ${rows}`;
 }
-async function cycleEventPayment(eventId,studentId){
+function cycleEventPayment(eventId,studentId){
   const ev=db.events.find(e=>e.id===eventId);
   if(!ev.pagos) ev.pagos={};
-  const entry=ev.pagos[studentId]||{status:'unpaid'};
-  const cur=entry.status||'unpaid';
-  if(cur==='unpaid'){
-    ev.pagos[studentId]={status:'requested'};
-    saveDB();
-    await sbUpsertEventPayment(eventId,studentId,'requested',null,null);
-  } else if(cur==='requested'){
-    const debe=eventCuota(ev);
-    const input=prompt('¿Con cuánto pagó este evento? (adeuda '+money(debe)+')');
-    if(input===null) return;
-    const montoEntregado=parseFloat(input);
-    if(isNaN(montoEntregado)){ alert('Ingresa un monto válido.'); return; }
-    const cambio=montoEntregado-debe;
-    ev.pagos[studentId]={status:'validated',montoEntregado,cambio};
-    saveDB();
-    await sbUpsertEventPayment(eventId,studentId,'validated',montoEntregado,cambio);
-  } else {
-    ev.pagos[studentId]={status:'unpaid'};
-    saveDB();
-    await sbUpsertEventPayment(eventId,studentId,'unpaid',null,null);
-  }
+  const cur=ev.pagos[studentId]||'unpaid';
+  ev.pagos[studentId]=cur==='unpaid'?'requested':(cur==='requested'?'validated':'unpaid');
+  saveDB();
 }
 function confirmEventWhatsapp(eventId,studentId){
   const ev=db.events.find(e=>e.id===eventId);
   const s=db.students.find(x=>x.id===studentId);
-  const entry=ev.pagos&&ev.pagos[studentId];
-  if(!entry||entry.status!=='validated'){ alert('Este pago aún no está validado.'); return; }
+  if((ev.pagos&&ev.pagos[studentId])!=='validated'){ alert('Este pago aún no está validado.'); return; }
   if(!s.whatsapp){ alert('Este alumno no tiene número de WhatsApp registrado.'); return; }
   const msg=`Hola ${s.nombrePadre}, se confirma el pago de ${s.nombre} para el evento "${ev.nombre}" por ${money(eventCuota(ev))}. ¡Gracias!`;
   window.open(waLink(s.whatsapp,msg),'_blank');
 }
-async function deleteEvent(id){
+function deleteEvent(id){
   if(!confirm('¿Eliminar este evento?')) return;
   db.events=db.events.filter(e=>e.id!==id);
   saveDB();
-  await sbDeleteEvent(id);
 }
 
 function renderAdminAjustes(){
@@ -1110,43 +891,18 @@ function bindAdminPanelContent(){
     if(sel) sel.onchange=()=>{ ui.adminPayMonthIdx=parseInt(sel.value,10); render(); };
   }
 
-  if(ui.adminTab==='alumnos'){
-    const showBtn=document.getElementById('btn-show-student-form');
-    if(showBtn) showBtn.onclick=()=>{ ui.showStudentForm=true; render(); };
-    const cancelBtn=document.getElementById('btn-cancel-student');
-    if(cancelBtn) cancelBtn.onclick=()=>{ ui.showStudentForm=false; render(); };
-    const form=document.getElementById('form-new-student');
-    if(form) form.onsubmit=async(e)=>{
-      e.preventDefault();
-      const nombre=document.getElementById('as-nombre').value.trim();
-      const numLista=document.getElementById('as-lista').value.trim();
-      const nombrePadre=document.getElementById('as-padre').value.trim();
-      const whatsapp=document.getElementById('as-whatsapp').value.trim();
-      if(!nombre||!numLista||!nombrePadre||!whatsapp) return;
-      const submitBtn=form.querySelector('button[type="submit"]');
-      submitBtn.disabled=true; submitBtn.textContent='Guardando…';
-      const id=await sbInsertStudent({nombre,numLista,nombrePadre,whatsapp});
-      if(!id){ submitBtn.disabled=false; submitBtn.textContent='Registrar alumno'; return; }
-      db.students.push({id,nombre,numLista,nombrePadre,whatsapp,createdAt:Date.now()});
-      ui.showStudentForm=false;
-      saveDB();
-    };
-  }
-
   if(ui.adminTab==='gastos'){
     const showBtn=document.getElementById('btn-show-expense-form');
     if(showBtn) showBtn.onclick=()=>{ ui.showExpenseForm=true; render(); };
     const cancelBtn=document.getElementById('btn-cancel-expense');
     if(cancelBtn) cancelBtn.onclick=()=>{ ui.showExpenseForm=false; render(); };
     const form=document.getElementById('form-new-expense');
-    if(form) form.onsubmit=async(e)=>{
+    if(form) form.onsubmit=(e)=>{
       e.preventDefault();
       const nombre=document.getElementById('ex-nombre').value.trim();
       const fecha=document.getElementById('ex-fecha').value;
       const monto=parseFloat(document.getElementById('ex-monto').value)||0;
-      const id=await sbInsertExpense({nombre,fecha,monto});
-      if(!id) return;
-      db.expenses.push({ id, nombre, fecha, monto });
+      db.expenses.push({ id:uid(), nombre, fecha, monto });
       ui.showExpenseForm=false;
       saveDB();
     };
@@ -1158,27 +914,24 @@ function bindAdminPanelContent(){
     const cancelBtn=document.getElementById('btn-cancel-event');
     if(cancelBtn) cancelBtn.onclick=()=>{ ui.showEventForm=false; render(); };
     const form=document.getElementById('form-new-event');
-    if(form) form.onsubmit=async(e)=>{
+    if(form) form.onsubmit=(e)=>{
       e.preventDefault();
       const nombre=document.getElementById('ev-nombre').value.trim();
       const fecha=document.getElementById('ev-fecha').value;
       const montoTotal=parseFloat(document.getElementById('ev-monto').value)||0;
-      const id=await sbInsertEvent({nombre,fecha,montoTotal});
-      if(!id) return;
-      db.events.push({ id, nombre, fecha, montoTotal, pagos:{} });
+      db.events.push({ id:uid(), nombre, fecha, montoTotal, pagos:{} });
       ui.showEventForm=false;
       saveDB();
     };
   }
 
   if(ui.adminTab==='ajustes'){
-    document.getElementById('form-settings').onsubmit=async(e)=>{
+    document.getElementById('form-settings').onsubmit=(e)=>{
       e.preventDefault();
       db.settings.weeklyAmount=parseFloat(document.getElementById('set-weekly').value)||0;
       db.settings.adminWhatsapp=document.getElementById('set-whatsapp').value.trim();
       db.settings.adminPassword=document.getElementById('set-password').value.trim()||db.settings.adminPassword;
       saveDB();
-      await sbUpdateSettings(db.settings);
       alert('Configuración guardada.');
     };
   }
@@ -1187,7 +940,7 @@ function bindAdminPanelContent(){
 /* =========================================================
    ARRANQUE
 ========================================================= */
-initApp();
+render();
 </script>
 </body>
 </html>
