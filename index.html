@@ -6,6 +6,7 @@
 <title>Libro de Pagos Escolares</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --ink:#1F3A34;
@@ -39,51 +40,17 @@
   button{font-family:inherit;cursor:pointer;border:none;}
   input,select{font-family:inherit;}
 
-  /* ---------- Login ---------- */
-  .login-wrap{
-    min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    padding:32px 20px;text-align:center;
-  }
-  .ledger-mark{
-    width:56px;height:56px;border-radius:50%;background:var(--ink);
-    display:flex;align-items:center;justify-content:center;margin-bottom:18px;
-    box-shadow:var(--shadow);
-  }
-  .ledger-mark span{color:var(--gold-light);font-family:'Fraunces',serif;font-size:26px;font-weight:600;}
-  .login-wrap h1{font-size:30px;margin:0 0 6px;color:var(--ink);font-weight:600;}
-  .login-wrap p.sub{color:var(--muted);margin:0 0 34px;max-width:360px;line-height:1.5;}
-  .door-row{display:flex;gap:16px;width:100%;max-width:420px;flex-wrap:wrap;justify-content:center;}
-  .door{
-    flex:1;min-width:170px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-    padding:26px 18px;box-shadow:var(--shadow);transition:transform .15s ease;
-  }
-  .door:hover{transform:translateY(-3px);}
-  .door .icon{font-size:26px;margin-bottom:10px;display:block;}
-  .door h3{margin:0 0 6px;font-size:17px;color:var(--ink);}
-  .door p{margin:0 0 16px;font-size:13px;color:var(--muted);line-height:1.4;}
-  .btn{
-    display:inline-flex;align-items:center;justify-content:center;gap:8px;
-    padding:11px 18px;border-radius:10px;font-size:14px;font-weight:600;
-    background:var(--ink);color:var(--paper);width:100%;
-  }
-  .btn.gold{background:var(--gold);color:#2B2109;}
-  .btn.outline{background:transparent;border:1px solid var(--ink);color:var(--ink);}
-  .btn.coral{background:var(--coral);color:#fff;}
-  .btn.small{padding:7px 12px;font-size:12.5px;width:auto;}
-  .btn.block{width:100%;}
-  .btn:disabled{opacity:.45;cursor:not-allowed;}
-  .link-btn{background:none;color:var(--ink);text-decoration:underline;font-size:13px;padding:4px;width:auto;}
-
-  /* ---------- Shared layout ---------- */
+  /* ---------- Top nav ---------- */
   .topbar{
-    background:var(--ink);color:var(--paper);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;
-    position:sticky;top:0;z-index:5;
+    background:var(--ink);color:var(--paper);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;z-index:5;flex-wrap:wrap;gap:10px;
   }
-  .topbar .brand{display:flex;align-items:center;gap:10px;}
+  .topbar .brand{display:flex;align-items:center;gap:10px;cursor:pointer;}
   .topbar .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--gold-light);}
   .topbar .brand span.label{font-family:'Fraunces',serif;font-size:16px;}
-  .topbar .who{font-size:12.5px;color:var(--paper-2);text-align:right;}
-  .topbar .who button{background:none;color:var(--gold-light);text-decoration:underline;padding:2px;font-size:12px;margin-top:2px;}
+  .nav-tabs{display:flex;gap:6px;}
+  .navtab{padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;color:var(--paper-2);}
+  .navtab.active{background:var(--gold);color:#2B2109;}
   .content{padding:22px 18px 10px;}
 
   .card{
@@ -101,6 +68,16 @@
   .stat .num{font-family:'Fraunces',serif;font-size:26px;font-weight:600;color:var(--gold-light);}
   .stat .lab{font-size:12px;color:var(--paper-2);margin-top:2px;}
 
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:11px 18px;border-radius:10px;font-size:14px;font-weight:600;
+    background:var(--ink);color:var(--paper);width:100%;
+  }
+  .btn.gold{background:var(--gold);color:#2B2109;}
+  .btn.outline{background:transparent;border:1px solid var(--ink);color:var(--ink);}
+  .btn.small{padding:7px 12px;font-size:12.5px;width:auto;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
   form.inline-form{display:grid;gap:10px;margin-top:6px;}
   form.inline-form label{font-size:12.5px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px;}
   form.inline-form input,form.inline-form select{
@@ -110,26 +87,10 @@
   .field-view span.k{color:var(--muted);}
   .field-view span.v{font-weight:600;color:var(--ink);}
 
-  /* month header / accordion */
-  .month-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .month-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
   .month-head h2{margin:0;}
-  .month-amount{font-size:13px;color:var(--muted);}
-  .weeks-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
-  .week-item{display:flex;flex-direction:column;align-items:center;gap:6px;}
-  .circle{
-    width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    font-weight:700;font-size:14px;border:2px solid var(--line);background:#fff;color:var(--muted);
-    transition:transform .1s ease;
-  }
-  .circle.unpaid{cursor:pointer;}
-  .circle.unpaid:hover{transform:scale(1.06);border-color:var(--gold);}
-  .circle.selected{background:var(--gold-light);border-color:var(--gold);color:#3A2C05;}
-  .circle.requested{background:var(--coral-bg);border-color:var(--coral);color:var(--coral);}
-  .circle.validated{background:var(--success);border-color:var(--success-dark);color:#fff;}
-  .circle.locked{opacity:.4;}
-  .week-item .wlabel{font-size:11px;color:var(--muted);}
 
-  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:12px;}
   .legend span{display:inline-flex;align-items:center;gap:5px;}
   .legend i{width:12px;height:12px;border-radius:50%;display:inline-block;}
   .legend i.unpaid{background:#fff;border:2px solid var(--line);}
@@ -140,7 +101,7 @@
   .accordion-item{border-top:1px solid var(--line);padding:10px 0;}
   .accordion-title{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:6px 0;}
   .accordion-title h3{margin:0;font-size:15px;color:var(--ink);}
-  .accordion-title .chev{color:var(--muted);font-size:13px;}
+  .accordion-title .chev{color:var(--muted);font-size:13px;display:flex;align-items:center;gap:8px;}
   .accordion-body{padding-top:10px;}
   .accordion-body.hidden{display:none;}
   .locked-tag{font-size:11px;background:var(--paper-2);color:var(--muted);padding:3px 8px;border-radius:20px;}
@@ -169,65 +130,190 @@
   .table-scroll{overflow-x:auto;}
   .mini-circle{
     width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
-    font-size:11px;font-weight:700;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;
+    font-size:11px;font-weight:700;border:2px solid var(--line);background:#fff;color:var(--muted);
   }
+  .mini-circle.clickable{cursor:pointer;}
+  .mini-circle.clickable:hover{border-color:var(--gold);}
+  .mini-circle.selected-mini{background:var(--gold-light);border-color:var(--gold);color:#3A2C05;}
   .mini-circle.requested{background:var(--coral-bg);border-color:var(--coral);color:var(--coral);}
   .mini-circle.validated{background:var(--success);border-color:var(--success-dark);color:#fff;}
 
   .banner{
     background:var(--paper-2);border:1px dashed var(--gold);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--ink);margin-bottom:16px;
   }
-  .modal-bg{
-    position:fixed;inset:0;background:rgba(20,39,32,0.55);display:flex;align-items:center;justify-content:center;
-    padding:20px;z-index:20;
-  }
-  .modal{background:var(--card);border-radius:var(--radius);padding:22px;max-width:420px;width:100%;box-shadow:var(--shadow);}
-  .modal h3{margin:0 0 12px;color:var(--ink);}
-  .modal-actions{display:flex;gap:10px;margin-top:16px;}
   .error-text{color:var(--coral);font-size:12.5px;margin-top:4px;}
   .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4;}
+  .admin-session-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;font-size:13px;color:var(--muted);}
   @media(max-width:480px){
     .stat-row{flex-direction:column;}
-    .door-row{flex-direction:column;}
   }
 </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="app"><div style="padding:40px 18px;text-align:center;color:#6E6857;font-family:'Inter',sans-serif;">Cargando datos…</div></div>
 
 <script>
 /* =========================================================
-   DATOS Y ALMACENAMIENTO
+   DATOS Y ALMACENAMIENTO (Supabase)
 ========================================================= */
-const DB_KEY='ge_db_v2';
+// 1) Pega aquí la Project URL y la anon public key de tu proyecto Supabase
+//    (Project Settings → API en supabase.com).
+const SUPABASE_URL='https://cexfnnswnhdnkftqviks.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_8GsOIojzPv3DW7ZDAyQQmw_v1sxEdDl';
+
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
 function defaultDB(){
   return {
     students:[],
-    payments:{},      // { studentId: { 'YYYY-MM': { weekIndex: 'requested'|'validated' } } }
+    payments:{},      // { studentId: { 'YYYY-MM': { weekIndex: {status,montoEntregado,cambio} } } }
     expenses:[],       // { id, nombre, fecha, monto }
-    events:[],         // { id, nombre, fecha, montoTotal, pagos:{studentId:'requested'|'validated'} }
+    events:[],         // { id, nombre, fecha, montoTotal, pagos:{studentId:{status,montoEntregado,cambio}} }
     settings:{ weeklyAmount:20, adminPassword:'admin123', adminWhatsapp:'' }
   };
 }
-function loadDB(){
-  try{
-    const raw=localStorage.getItem(DB_KEY);
-    if(raw) return Object.assign(defaultDB(),JSON.parse(raw));
-  }catch(e){}
-  return defaultDB();
+let db=defaultDB();
+let dbReady=false;
+
+async function loadDB(){
+  const [studentsRes,paymentsRes,expensesRes,eventsRes,eventPaymentsRes,settingsRes]=await Promise.all([
+    sb.from('students').select('*').order('created_at',{ascending:true}),
+    sb.from('payments').select('*'),
+    sb.from('expenses').select('*'),
+    sb.from('events').select('*'),
+    sb.from('event_payments').select('*'),
+    sb.from('settings').select('*').eq('id',1).maybeSingle()
+  ]);
+  const errs=[studentsRes,paymentsRes,expensesRes,eventsRes,eventPaymentsRes,settingsRes].filter(r=>r.error);
+  if(errs.length){
+    console.error(errs);
+    document.getElementById('app').innerHTML=`<div style="padding:30px 18px;color:#D9694A;font-family:sans-serif;">
+      No se pudo conectar con Supabase. Revisa que SUPABASE_URL y SUPABASE_ANON_KEY estén bien puestas
+      y que las tablas existan.<br><br><small>${errs.map(e=>e.error.message).join('<br>')}</small></div>`;
+    throw new Error('supabase load failed');
+  }
+
+  const next=defaultDB();
+  next.students=(studentsRes.data||[]).map(s=>({
+    id:s.id, nombre:s.nombre, numLista:s.num_lista, nombrePadre:s.nombre_padre, whatsapp:s.whatsapp, createdAt:s.created_at
+  }));
+  (paymentsRes.data||[]).forEach(p=>{
+    if(!next.payments[p.student_id]) next.payments[p.student_id]={};
+    if(!next.payments[p.student_id][p.month_key]) next.payments[p.student_id][p.month_key]={};
+    next.payments[p.student_id][p.month_key][p.week_index]={
+      status:p.status, montoEntregado:p.monto_entregado, cambio:p.cambio
+    };
+  });
+  next.expenses=(expensesRes.data||[]).map(e=>({id:e.id,nombre:e.nombre,fecha:e.fecha,monto:e.monto}));
+  next.events=(eventsRes.data||[]).map(e=>({id:e.id,nombre:e.nombre,fecha:e.fecha,montoTotal:e.monto_total,pagos:{}}));
+  (eventPaymentsRes.data||[]).forEach(ep=>{
+    const ev=next.events.find(e=>e.id===ep.event_id);
+    if(ev) ev.pagos[ep.student_id]={status:ep.status,montoEntregado:ep.monto_entregado,cambio:ep.cambio};
+  });
+  if(settingsRes.data){
+    next.settings={
+      weeklyAmount:Number(settingsRes.data.weekly_amount),
+      adminPassword:settingsRes.data.admin_password,
+      adminWhatsapp:settingsRes.data.admin_whatsapp||''
+    };
+  }
+  db=next;
 }
-let db=loadDB();
-function saveDB(){ localStorage.setItem(DB_KEY, JSON.stringify(db)); render(); }
+
+function saveDB(){ render(); } // los cambios ya se guardan en Supabase en cada acción; esto solo re-renderiza
+
+function subscribeRealtime(){
+  sb.channel('ge-db-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'students'},refreshFromServer)
+    .on('postgres_changes',{event:'*',schema:'public',table:'payments'},refreshFromServer)
+    .on('postgres_changes',{event:'*',schema:'public',table:'expenses'},refreshFromServer)
+    .on('postgres_changes',{event:'*',schema:'public',table:'events'},refreshFromServer)
+    .on('postgres_changes',{event:'*',schema:'public',table:'event_payments'},refreshFromServer)
+    .on('postgres_changes',{event:'*',schema:'public',table:'settings'},refreshFromServer)
+    .subscribe();
+}
+let refreshQueued=false;
+async function refreshFromServer(){
+  if(refreshQueued) return;
+  refreshQueued=true;
+  setTimeout(async()=>{ refreshQueued=false; await loadDB(); render(); },250);
+}
+
+async function initApp(){
+  try{
+    await loadDB();
+    dbReady=true;
+    subscribeRealtime();
+    render();
+  }catch(e){ /* pantalla de error ya mostrada en loadDB */ }
+}
 
 function uid(){ return 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+/* ---- escrituras hacia Supabase ---- */
+async function sbInsertStudent(student){
+  const {data,error}=await sb.from('students').insert({
+    nombre:student.nombre, num_lista:student.numLista, nombre_padre:student.nombrePadre, whatsapp:student.whatsapp
+  }).select().single();
+  if(error){ alert('Error al registrar alumno: '+error.message); return null; }
+  return data.id;
+}
+async function sbUpdateStudent(s){
+  const {error}=await sb.from('students').update({
+    nombre:s.nombre, num_lista:s.numLista, nombre_padre:s.nombrePadre, whatsapp:s.whatsapp
+  }).eq('id',s.id);
+  if(error) alert('Error al guardar alumno: '+error.message);
+}
+async function sbDeleteStudent(id){
+  const {error}=await sb.from('students').delete().eq('id',id);
+  if(error) alert('Error al eliminar alumno: '+error.message);
+}
+async function sbUpsertPayment(studentId,monthKey,weekIndex,status,montoEntregado,cambio){
+  const {error}=await sb.from('payments').upsert({
+    student_id:studentId, month_key:monthKey, week_index:weekIndex,
+    status, monto_entregado:montoEntregado??null, cambio:cambio??null
+  },{onConflict:'student_id,month_key,week_index'});
+  if(error) alert('Error al guardar el pago: '+error.message);
+}
+async function sbInsertExpense(ex){
+  const {data,error}=await sb.from('expenses').insert({nombre:ex.nombre,fecha:ex.fecha||null,monto:ex.monto}).select().single();
+  if(error){ alert('Error al registrar gasto: '+error.message); return null; }
+  return data.id;
+}
+async function sbUpdateExpense(ex){
+  const {error}=await sb.from('expenses').update({nombre:ex.nombre,fecha:ex.fecha||null,monto:ex.monto}).eq('id',ex.id);
+  if(error) alert('Error al guardar gasto: '+error.message);
+}
+async function sbDeleteExpense(id){
+  const {error}=await sb.from('expenses').delete().eq('id',id);
+  if(error) alert('Error al eliminar gasto: '+error.message);
+}
+async function sbInsertEvent(ev){
+  const {data,error}=await sb.from('events').insert({nombre:ev.nombre,fecha:ev.fecha||null,monto_total:ev.montoTotal}).select().single();
+  if(error){ alert('Error al crear evento: '+error.message); return null; }
+  return data.id;
+}
+async function sbDeleteEvent(id){
+  const {error}=await sb.from('events').delete().eq('id',id);
+  if(error) alert('Error al eliminar evento: '+error.message);
+}
+async function sbUpsertEventPayment(eventId,studentId,status,montoEntregado,cambio){
+  const {error}=await sb.from('event_payments').upsert({
+    event_id:eventId, student_id:studentId, status, monto_entregado:montoEntregado??null, cambio:cambio??null
+  },{onConflict:'event_id,student_id'});
+  if(error) alert('Error al guardar el pago del evento: '+error.message);
+}
+async function sbUpdateSettings(settings){
+  const {error}=await sb.from('settings').update({
+    weekly_amount:settings.weeklyAmount, admin_password:settings.adminPassword, admin_whatsapp:settings.adminWhatsapp
+  }).eq('id',1);
+  if(error) alert('Error al guardar configuración: '+error.message);
+}
 function money(n){ return '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function digitsOnly(s){ return (s||'').replace(/\D/g,''); }
 function waLink(phone,text){ return 'https://wa.me/'+digitsOnly(phone)+'?text='+encodeURIComponent(text); }
 
-/* session (no forma parte de la base de datos) */
-function getRole(){ return localStorage.getItem('ge_role'); }
-function setRole(r){ r?localStorage.setItem('ge_role',r):localStorage.removeItem('ge_role'); }
+/* identidad del dispositivo (a qué alumno representa este navegador) */
 function getMyStudentId(){ return localStorage.getItem('ge_student_id'); }
 function setMyStudentId(id){ localStorage.setItem('ge_student_id',id); }
 
@@ -252,10 +338,7 @@ function weeksOfMonth(y,m){
     if(d.getDay()===1) weeks.push(new Date(d));
     d.setDate(d.getDate()+1);
   }
-  if(weeks.length===0){
-    // mes sin lunes propio (caso raro): usar el primer dia como unica semana
-    weeks.push(new Date(y,m-1,1));
-  }
+  if(weeks.length===0) weeks.push(new Date(y,m-1,1));
   return weeks;
 }
 function shortDate(d){ return d.getDate()+' '+MONTH_NAMES[d.getMonth()+1].slice(0,3).toLowerCase(); }
@@ -277,16 +360,15 @@ function studentPaidWeeksCount(studentId){
   const p=db.payments[studentId]||{};
   let count=0;
   Object.values(p).forEach(monthObj=>{
-    Object.values(monthObj).forEach(status=>{ if(status==='validated') count++; });
+    Object.values(monthObj).forEach(entry=>{ if(entry&&entry.status==='validated') count++; });
   });
   return count;
 }
 function studentTotalPaid(studentId){
   let total=studentPaidWeeksCount(studentId)*db.settings.weeklyAmount;
   db.events.forEach(ev=>{
-    if(ev.pagos && ev.pagos[studentId]==='validated'){
-      total+=eventCuota(ev);
-    }
+    const entry=ev.pagos&&ev.pagos[studentId];
+    if(entry && entry.status==='validated') total+=eventCuota(ev);
   });
   return total;
 }
@@ -304,9 +386,9 @@ function pendingValidationsCount(){
   let count=0;
   db.students.forEach(s=>{
     const p=db.payments[s.id]||{};
-    Object.values(p).forEach(monthObj=>Object.values(monthObj).forEach(st=>{ if(st==='requested') count++; }));
+    Object.values(p).forEach(monthObj=>Object.values(monthObj).forEach(entry=>{ if(entry&&entry.status==='requested') count++; }));
   });
-  db.events.forEach(ev=>{ Object.values(ev.pagos||{}).forEach(st=>{ if(st==='requested') count++; }); });
+  db.events.forEach(ev=>{ Object.values(ev.pagos||{}).forEach(entry=>{ if(entry&&entry.status==='requested') count++; }); });
   return count;
 }
 
@@ -314,7 +396,7 @@ function pendingValidationsCount(){
    ESTADO DE INTERFAZ (no persistente)
 ========================================================= */
 let ui={
-  screen:'login',
+  screen:'home',            // 'home' | 'registro' | 'admin'
   selection:new Set(),
   expanded:new Set(),
   adminTab:'resumen',
@@ -322,257 +404,168 @@ let ui={
   showExpenseForm:false,
   editExpenseId:null,
   showEventForm:false,
+  showStudentForm:false,
   editStudentId:null,
-  editEventId:null,
-  loginError:'',
-  regError:''
+  loginError:''
 };
 
-function initScreen(){
-  const role=getRole();
-  if(role==='padre'){
-    const sid=getMyStudentId();
-    ui.screen=(sid && db.students.find(s=>s.id===sid))?'parent':'register';
-  } else if(role==='admin'){
-    ui.screen=adminUnlocked?'admin':'adminLogin';
-  } else {
-    ui.screen='login';
-  }
-}
+function goHome(){ ui.screen='home'; render(); }
+function goScreen(key){ ui.screen=key; render(); }
 
 /* =========================================================
    RENDER PRINCIPAL
 ========================================================= */
 function render(){
   const app=document.getElementById('app');
-  if(ui.screen==='login'){ app.innerHTML=renderLogin(); bindLogin(); }
-  else if(ui.screen==='register'){ app.innerHTML=renderRegister(); bindRegister(); }
-  else if(ui.screen==='parent'){ app.innerHTML=renderParent(); bindParent(); }
-  else if(ui.screen==='adminLogin'){ app.innerHTML=renderAdminLogin(); bindAdminLogin(); }
-  else if(ui.screen==='admin'){ app.innerHTML=renderAdmin(); bindAdmin(); }
+  if(ui.screen==='registro'){ app.innerHTML=renderRegistro(); bindRegistro(); }
+  else if(ui.screen==='admin'){ app.innerHTML=renderAdminScreen(); bindAdminScreen(); }
+  else { app.innerHTML=renderHome(); bindHome(); }
 }
 
-/* =========================================================
-   LOGIN
-========================================================= */
-function renderLogin(){
-  return `
-  <div class="login-wrap">
-    <div class="ledger-mark"><span>P</span></div>
-    <h1>Libro de Pagos Escolares</h1>
-    <p class="sub">Control de colegiaturas semanales, eventos y gastos del ciclo 2026-2027.</p>
-    <div class="door-row">
-      <div class="door">
-        <span class="icon">🎒</span>
-        <h3>Soy padre de familia</h3>
-        <p>Registra a tu hijo o consulta sus semanas pagadas.</p>
-        <button class="btn gold" id="btn-go-padre">Entrar</button>
-      </div>
-      <div class="door">
-        <span class="icon">🔑</span>
-        <h3>Administrador</h3>
-        <p>Valida pagos, gestiona gastos y eventos.</p>
-        <button class="btn outline" id="btn-go-admin">Entrar</button>
-      </div>
+function topNavHTML(active){
+  return `<div class="topbar">
+    <div class="brand" onclick="goHome()"><span class="dot"></span><span class="label">Libro de Pagos</span></div>
+    <div class="nav-tabs">
+      <div class="navtab ${active==='registro'?'active':''}" onclick="goScreen('registro')">Registro</div>
+      <div class="navtab ${active==='admin'?'active':''}" onclick="goScreen('admin')">Administrador</div>
     </div>
   </div>`;
 }
-function bindLogin(){
-  document.getElementById('btn-go-padre').onclick=()=>{ setRole('padre'); initScreen(); render(); };
-  document.getElementById('btn-go-admin').onclick=()=>{ setRole('admin'); initScreen(); render(); };
+
+/* =========================================================
+   TABLA REUTILIZABLE DE PAGOS (para la pantalla principal)
+========================================================= */
+function renderHomeMonthTable(idx){
+  const months=schoolMonths();
+  const mo=months[idx];
+  const key=monthKey(mo.year,mo.month);
+  const weeks=weeksOfMonth(mo.year,mo.month);
+  const myId=getMyStudentId();
+  const isCurrent=idx===currentMonthIndex();
+  const headWeeks=weeks.map(wd=>`<th>${shortDate(wd)}</th>`).join('');
+
+  let rows='';
+  if(db.students.length===0){
+    rows=`<tr><td colspan="${weeks.length+1}"><div class="empty">Aún no hay alumnos registrados.</div></td></tr>`;
+  } else {
+    rows=db.students.map(s=>{
+      const isMine=s.id===myId;
+      const cells=weeks.map((wd,wi)=>{
+        const entry=db.payments[s.id]&&db.payments[s.id][key]&&db.payments[s.id][key][wi];
+        const status=(entry&&entry.status)||'unpaid';
+        const selected=isMine&&isCurrent&&status==='unpaid'&&ui.selection.has(wi);
+        let cls='mini-circle';
+        let label='';
+        if(status==='validated'){ cls+=' validated'; label='✓'; }
+        else if(status==='requested'){ cls+=' requested'; label='…'; }
+        else if(selected){ cls+=' selected-mini'; label='●'; }
+        const clickable=isMine&&isCurrent&&status==='unpaid';
+        if(clickable) cls+=' clickable';
+        return `<td><div class="${cls}" ${clickable?`onclick="toggleWeekSelection(${wi})"`:''} title="Semana del ${shortDate(wd)}">${label}</div></td>`;
+      }).join('');
+      return `<tr ${isMine?'style="background:rgba(184,146,63,0.08);"':''}>
+        <td class="name-cell">${s.nombre}${isMine?' <span class="locked-tag">Tú</span>':''}<div class="meta" style="font-weight:400;">Lista ${s.numLista}</div></td>
+        ${cells}
+      </tr>`;
+    }).join('');
+  }
+  return `<div class="table-scroll"><table class="paytable"><thead><tr><th style="text-align:left;">Alumno</th>${headWeeks}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function renderEventsTable(){
+  if(db.events.length===0) return '<div class="empty">No hay eventos activos por el momento.</div>';
+  const myId=getMyStudentId();
+  const headCols=db.events.map(ev=>`<th>${ev.nombre}<br><span style="font-weight:400;color:var(--muted);">${money(eventCuota(ev))}</span></th>`).join('');
+  let rows='';
+  if(db.students.length===0){
+    rows=`<tr><td colspan="${db.events.length+1}"><div class="empty">Aún no hay alumnos registrados.</div></td></tr>`;
+  } else {
+    rows=db.students.map(s=>{
+      const isMine=s.id===myId;
+      const cells=db.events.map(ev=>{
+        const entry=ev.pagos&&ev.pagos[s.id];
+        const status=(entry&&entry.status)||'unpaid';
+        let cls='mini-circle'; let label='';
+        if(status==='validated'){ cls+=' validated'; label='✓'; }
+        else if(status==='requested'){ cls+=' requested'; label='…'; }
+        const clickable=isMine&&status==='unpaid';
+        if(clickable) cls+=' clickable';
+        return `<td><div class="${cls}" ${clickable?`onclick="requestEventPayment('${ev.id}')"`:''} title="${ev.nombre}">${label}</div></td>`;
+      }).join('');
+      return `<tr ${isMine?'style="background:rgba(184,146,63,0.08);"':''}><td class="name-cell">${s.nombre}${isMine?' <span class="locked-tag">Tú</span>':''}</td>${cells}</tr>`;
+    }).join('');
+  }
+  return `<div class="table-scroll"><table class="paytable"><thead><tr><th style="text-align:left;">Alumno</th>${headCols}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function renderExpensesList(){
+  if(db.expenses.length===0) return '<div class="empty">Aún no se han registrado gastos.</div>';
+  return db.expenses.slice().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(ex=>`
+    <div class="list-row">
+      <div><div style="font-weight:600;">${ex.nombre}</div><div class="meta">${ex.fecha}</div></div>
+      <div class="amt">${money(ex.monto)}</div>
+    </div>`).join('');
 }
 
 /* =========================================================
-   REGISTRO DE ALUMNO (padre)
+   PANTALLA PRINCIPAL (pública)
 ========================================================= */
-function renderRegister(){
-  return `
-  <div class="login-wrap" style="justify-content:flex-start;padding-top:60px;">
-    <div class="ledger-mark"><span>P</span></div>
-    <h1 style="font-size:24px;">Registro del alumno</h1>
-    <p class="sub">Estos datos solo podrán ser modificados por el administrador una vez guardados.</p>
-    <div class="card" style="width:100%;max-width:420px;text-align:left;">
-      <form class="inline-form" id="form-register">
-        <div>
-          <label>Nombre del alumno</label>
-          <input type="text" id="r-nombre" required placeholder="Nombre completo">
-        </div>
-        <div>
-          <label>Número de lista</label>
-          <input type="number" id="r-lista" required min="1" placeholder="Ej. 12">
-        </div>
-        <div>
-          <label>Nombre del padre / tutor</label>
-          <input type="text" id="r-padre" required placeholder="Nombre completo">
-        </div>
-        <div>
-          <label>WhatsApp del padre / tutor</label>
-          <input type="tel" id="r-whatsapp" required placeholder="10 dígitos + lada">
-        </div>
-        <div id="r-error" class="error-text"></div>
-        <button type="submit" class="btn gold">Guardar registro</button>
-      </form>
-    </div>
-    <button class="link-btn" id="btn-back-login" style="margin-top:14px;">← Volver</button>
-  </div>`;
-}
-function bindRegister(){
-  document.getElementById('btn-back-login').onclick=()=>{ setRole(null); initScreen(); render(); };
-  document.getElementById('form-register').onsubmit=(e)=>{
-    e.preventDefault();
-    const nombre=document.getElementById('r-nombre').value.trim();
-    const lista=document.getElementById('r-lista').value.trim();
-    const padre=document.getElementById('r-padre').value.trim();
-    const whatsapp=document.getElementById('r-whatsapp').value.trim();
-    if(!nombre||!lista||!padre||!whatsapp){
-      document.getElementById('r-error').textContent='Completa todos los campos.';
-      return;
-    }
-    const student={ id:uid(), nombre, numLista:lista, nombrePadre:padre, whatsapp, createdAt:Date.now() };
-    db.students.push(student);
-    setMyStudentId(student.id);
-    saveDB();
-    ui.screen='parent';
-    render();
-  };
-}
-
-/* =========================================================
-   PANTALLA DE PADRES
-========================================================= */
-function renderParent(){
-  const sid=getMyStudentId();
-  const student=db.students.find(s=>s.id===sid);
-  if(!student){ ui.screen='register'; return renderRegister(); }
-
+function renderHome(){
+  const myId=getMyStudentId();
+  const registered=myId && db.students.find(s=>s.id===myId);
   const months=schoolMonths();
   const curIdx=currentMonthIndex();
+  const mo=months[curIdx];
 
-  let monthsHtml='';
-  months.forEach((mo,idx)=>{
-    const key=monthKey(mo.year,mo.month);
-    const weeks=weeksOfMonth(mo.year,mo.month);
-    const isCurrent=idx===curIdx;
+  let monthsAccordion='';
+  months.forEach((m,idx)=>{
+    if(idx===curIdx) return;
+    const key=monthKey(m.year,m.month);
     const isFuture=idx>curIdx;
-    const isPast=idx<curIdx;
+    const open=ui.expanded.has(key);
+    monthsAccordion+=`<div class="accordion-item">
+      <div class="accordion-title" onclick="toggleMonth('${key}')">
+        <h3>${monthLabel(m.year,m.month)}</h3>
+        <span class="chev">${isFuture?'<span class="locked-tag">Próximamente</span>':''} ${open?'▲':'▼'}</span>
+      </div>
+      <div class="accordion-body ${open?'':'hidden'}">${renderHomeMonthTable(idx)}</div>
+    </div>`;
+  });
 
-    const weeksHtml=weeks.map((wd,wi)=>{
-      const status=(db.payments[sid]&&db.payments[sid][key]&&db.payments[sid][key][wi])||'unpaid';
-      const isSelected=isCurrent && ui.selection.has(wi);
-      let cls='circle ';
-      if(isFuture) cls+='locked';
-      else if(status==='validated') cls+='validated';
-      else if(status==='requested') cls+='requested';
-      else if(isSelected) cls+='selected';
-      else cls+='unpaid';
-      const clickable=isCurrent && status==='unpaid';
-      return `<div class="week-item">
-        <div class="${cls}" ${clickable?`data-week="${wi}" onclick="toggleWeekSelection(${wi})"`:''} title="Semana del ${shortDate(wd)}">
-          ${status==='validated'?'✓':(status==='requested'?'…':wd.getDate())}
-        </div>
-        <div class="wlabel">${shortDate(wd)}</div>
-      </div>`;
-    }).join('');
+  return `
+  ${topNavHTML('')}
+  <div class="content">
+    ${!registered?`<div class="banner">Regístrate en la pestaña <strong>Registro</strong> para poder solicitar la validación de tus pagos.</div>`:''}
+    <div class="stat-row">
+      <div class="stat"><div class="num">${money(db.settings.weeklyAmount)}</div><div class="lab">Cuota semanal</div></div>
+      ${registered?`<div class="stat"><div class="num">${money(studentTotalPaid(myId))}</div><div class="lab">Tu acumulado pagado</div></div>`:''}
+    </div>
 
-    const body=`
+    <div class="card">
+      <div class="month-head"><h2>${monthLabel(mo.year,mo.month)}</h2></div>
       <div class="legend">
         <span><i class="unpaid"></i>Sin pagar</span>
-        <span><i class="selected"></i>Seleccionada</span>
+        <span><i class="selected"></i>Tu selección</span>
         <span><i class="requested"></i>Esperando validación</span>
         <span><i class="validated"></i>Pagada</span>
       </div>
-      <div class="weeks-row">${weeksHtml}</div>
-      ${isCurrent?`<button class="btn gold" id="btn-request-payment" ${ui.selection.size===0?'disabled':''}>
-        Solicitar validación (${money(ui.selection.size*db.settings.weeklyAmount)})
-      </button>`:''}
-    `;
-
-    if(isCurrent){
-      monthsHtml+=`<div class="card">
-        <div class="month-head"><h2>${monthLabel(mo.year,mo.month)}</h2>
-        <span class="month-amount">Cuota semanal: ${money(db.settings.weeklyAmount)}</span></div>
-        ${body}
-      </div>`;
-    } else {
-      const open=ui.expanded.has(key);
-      monthsHtml+=`<div class="accordion-item">
-        <div class="accordion-title" onclick="toggleMonth('${key}')">
-          <h3>${monthLabel(mo.year,mo.month)}</h3>
-          <span class="chev">${isFuture?'<span class=\"locked-tag\">Próximamente</span>':''} ${open?'▲':'▼'}</span>
-        </div>
-        <div class="accordion-body ${open?'':'hidden'}">${body}</div>
-      </div>`;
-    }
-  });
-
-  // eventos activos
-  let eventsHtml='';
-  if(db.events.length){
-    eventsHtml=db.events.map(ev=>{
-      const status=(ev.pagos&&ev.pagos[sid])||'unpaid';
-      const cuota=eventCuota(ev);
-      let action='';
-      if(status==='unpaid'){
-        action=`<button class="btn small gold" onclick="requestEventPayment('${ev.id}')">Solicitar validación</button>`;
-      } else if(status==='requested'){
-        action=`<span class="locked-tag">Esperando validación</span>`;
-      } else {
-        action=`<span class="locked-tag" style="background:var(--success-bg);color:var(--success-dark);">Pagado ✓</span>`;
-      }
-      return `<div class="list-row">
-        <div>
-          <div style="font-weight:600;color:var(--ink);">${ev.nombre}</div>
-          <div class="meta">${ev.fecha||''} · cuota ${money(cuota)}</div>
-        </div>
-        ${action}
-      </div>`;
-    }).join('');
-  } else {
-    eventsHtml='<div class="empty">No hay eventos activos por el momento.</div>';
-  }
-
-  // gastos
-  let expensesHtml='';
-  if(db.expenses.length){
-    expensesHtml=db.expenses.slice().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(ex=>`
-      <div class="list-row">
-        <div><div style="font-weight:600;">${ex.nombre}</div><div class="meta">${ex.fecha}</div></div>
-        <div class="amt">${money(ex.monto)}</div>
-      </div>`).join('');
-  } else {
-    expensesHtml='<div class="empty">Aún no se han registrado gastos.</div>';
-  }
-
-  return `
-  <div class="topbar">
-    <div class="brand"><span class="dot"></span><span class="label">Libro de Pagos</span></div>
-    <div class="who">${student.nombre}<br><button id="btn-logout">Cerrar sesión</button></div>
-  </div>
-  <div class="content">
-    <div class="stat-row">
-      <div class="stat"><div class="num">${money(studentTotalPaid(sid))}</div><div class="lab">Acumulado pagado</div></div>
-      <div class="stat"><div class="num">${money(db.settings.weeklyAmount)}</div><div class="lab">Cuota semanal</div></div>
+      ${renderHomeMonthTable(curIdx)}
+      ${registered?`<button class="btn gold" id="btn-request-payment" style="margin-top:14px;" ${ui.selection.size===0?'disabled':''}>Solicitar validación (${money(ui.selection.size*db.settings.weeklyAmount)})</button>`:''}
     </div>
 
     <div class="card">
-      <h2>Datos registrados</h2>
-      <div class="field-view"><span class="k">Alumno</span><span class="v">${student.nombre}</span></div>
-      <div class="field-view"><span class="k">Número de lista</span><span class="v">${student.numLista}</span></div>
-      <div class="field-view"><span class="k">Padre / tutor</span><span class="v">${student.nombrePadre}</span></div>
-      <div class="field-view"><span class="k">WhatsApp</span><span class="v">${student.whatsapp}</span></div>
-      <div class="hint">Solo el administrador puede modificar estos datos.</div>
+      <h2>Otros meses del ciclo</h2>
+      ${monthsAccordion}
     </div>
 
-    ${monthsHtml}
-
     <div class="card">
-      <h2>Eventos del ciclo</h2>
-      ${eventsHtml}
+      <h2>Eventos del ciclo escolar</h2>
+      ${renderEventsTable()}
     </div>
 
     <div class="card">
       <h2>Gastos del ciclo escolar</h2>
-      ${expensesHtml}
+      ${renderExpensesList()}
     </div>
   </div>`;
 }
@@ -586,11 +579,10 @@ function toggleMonth(key){
   render();
 }
 
-function bindParent(){
-  document.getElementById('btn-logout').onclick=()=>{ setRole(null); ui.selection=new Set(); initScreen(); render(); };
+function bindHome(){
   const btnReq=document.getElementById('btn-request-payment');
   if(btnReq){
-    btnReq.onclick=()=>{
+    btnReq.onclick=async()=>{
       const sid=getMyStudentId();
       const student=db.students.find(s=>s.id===sid);
       const months=schoolMonths();
@@ -600,11 +592,12 @@ function bindParent(){
       if(!db.payments[sid]) db.payments[sid]={};
       if(!db.payments[sid][key]) db.payments[sid][key]={};
       const selectedList=[...ui.selection].sort((a,b)=>a-b);
-      selectedList.forEach(wi=>{ db.payments[sid][key][wi]='requested'; });
+      selectedList.forEach(wi=>{ db.payments[sid][key][wi]={status:'requested'}; });
       const amount=selectedList.length*db.settings.weeklyAmount;
       const weekLabels=selectedList.map(wi=>shortDate(weeks[wi])).join(', ');
       ui.selection=new Set();
       saveDB();
+      await Promise.all(selectedList.map(wi=>sbUpsertPayment(sid,key,wi,'requested',null,null)));
       const msg=`Hola, soy ${student.nombrePadre}, padre/tutor de ${student.nombre} (lista ${student.numLista}). `+
         `Solicito validar el pago de ${monthLabel(mo.year,mo.month)} - semanas: ${weekLabels}. Monto: ${money(amount)}.`;
       if(db.settings.adminWhatsapp){
@@ -616,13 +609,15 @@ function bindParent(){
   }
 }
 
-function requestEventPayment(eventId){
+async function requestEventPayment(eventId){
   const sid=getMyStudentId();
+  if(!sid){ alert('Regístrate primero en la pestaña Registro.'); return; }
   const student=db.students.find(s=>s.id===sid);
   const ev=db.events.find(e=>e.id===eventId);
   if(!ev.pagos) ev.pagos={};
-  ev.pagos[sid]='requested';
+  ev.pagos[sid]={status:'requested'};
   saveDB();
+  await sbUpsertEventPayment(eventId,sid,'requested',null,null);
   const msg=`Hola, soy ${student.nombrePadre}, padre/tutor de ${student.nombre} (lista ${student.numLista}). `+
     `Solicito validar el pago del evento "${ev.nombre}". Monto: ${money(eventCuota(ev))}.`;
   if(db.settings.adminWhatsapp){
@@ -633,47 +628,104 @@ function requestEventPayment(eventId){
 }
 
 /* =========================================================
-   LOGIN DE ADMINISTRADOR
+   REGISTRO
 ========================================================= */
-function renderAdminLogin(){
-  return `
-  <div class="login-wrap">
-    <div class="ledger-mark"><span>A</span></div>
-    <h1 style="font-size:24px;">Acceso de administrador</h1>
-    <p class="sub">Ingresa la contraseña para validar pagos, gastos y eventos.</p>
-    <div class="card" style="width:100%;max-width:360px;text-align:left;">
+function renderRegistro(){
+  const myId=getMyStudentId();
+  const student=db.students.find(s=>s.id===myId);
+  if(student){
+    return `${topNavHTML('registro')}
+    <div class="content">
+      <div class="card">
+        <h2>Tus datos registrados</h2>
+        <div class="field-view"><span class="k">Alumno</span><span class="v">${student.nombre}</span></div>
+        <div class="field-view"><span class="k">Número de lista</span><span class="v">${student.numLista}</span></div>
+        <div class="field-view"><span class="k">Padre / tutor</span><span class="v">${student.nombrePadre}</span></div>
+        <div class="field-view"><span class="k">WhatsApp</span><span class="v">${student.whatsapp}</span></div>
+        <div class="hint">Solo el administrador puede modificar estos datos. Ve a la pantalla principal para consultar tus semanas y solicitar validaciones.</div>
+      </div>
+    </div>`;
+  }
+  return `${topNavHTML('registro')}
+  <div class="content">
+    <div class="card">
+      <h2>Registro del alumno</h2>
+      <p class="desc">Estos datos solo podrán ser modificados por el administrador una vez guardados.</p>
+      <form class="inline-form" id="form-register">
+        <div><label>Nombre del alumno</label><input type="text" id="r-nombre" required placeholder="Nombre completo"></div>
+        <div><label>Número de lista</label><input type="number" id="r-lista" required min="1" placeholder="Ej. 12"></div>
+        <div><label>Nombre del padre / tutor</label><input type="text" id="r-padre" required placeholder="Nombre completo"></div>
+        <div><label>WhatsApp del padre / tutor</label><input type="tel" id="r-whatsapp" required placeholder="10 dígitos + lada"></div>
+        <div id="r-error" class="error-text"></div>
+        <button type="submit" class="btn gold">Guardar registro</button>
+      </form>
+    </div>
+  </div>`;
+}
+function bindRegistro(){
+  const form=document.getElementById('form-register');
+  if(!form) return;
+  form.onsubmit=async(e)=>{
+    e.preventDefault();
+    const nombre=document.getElementById('r-nombre').value.trim();
+    const lista=document.getElementById('r-lista').value.trim();
+    const padre=document.getElementById('r-padre').value.trim();
+    const whatsapp=document.getElementById('r-whatsapp').value.trim();
+    if(!nombre||!lista||!padre||!whatsapp){
+      document.getElementById('r-error').textContent='Completa todos los campos.';
+      return;
+    }
+    const submitBtn=form.querySelector('button[type="submit"]');
+    submitBtn.disabled=true; submitBtn.textContent='Guardando…';
+    const id=await sbInsertStudent({nombre,numLista:lista,nombrePadre:padre,whatsapp});
+    if(!id){ submitBtn.disabled=false; submitBtn.textContent='Guardar registro'; return; }
+    db.students.push({id,nombre,numLista:lista,nombrePadre:padre,whatsapp,createdAt:Date.now()});
+    setMyStudentId(id);
+    saveDB();
+    goHome();
+  };
+}
+
+/* =========================================================
+   ADMINISTRADOR
+========================================================= */
+function renderAdminScreen(){
+  if(!adminUnlocked) return topNavHTML('admin')+renderAdminLoginContent();
+  return topNavHTML('admin')+renderAdminPanelContent();
+}
+function bindAdminScreen(){
+  if(!adminUnlocked) bindAdminLoginContent();
+  else bindAdminPanelContent();
+}
+
+function renderAdminLoginContent(){
+  return `<div class="content">
+    <div class="card" style="max-width:360px;margin:20px auto;">
+      <h2>Acceso de administrador</h2>
+      <p class="desc">Ingresa la contraseña para validar pagos, gastos y eventos.</p>
       <form class="inline-form" id="form-admin-login">
-        <div>
-          <label>Contraseña</label>
-          <input type="password" id="admin-pass" required>
-        </div>
+        <div><label>Contraseña</label><input type="password" id="admin-pass" required></div>
         <div id="admin-login-error" class="error-text">${ui.loginError||''}</div>
         <button type="submit" class="btn gold">Entrar</button>
       </form>
     </div>
-    <button class="link-btn" id="btn-back-login2" style="margin-top:14px;">← Volver</button>
   </div>`;
 }
-function bindAdminLogin(){
-  document.getElementById('btn-back-login2').onclick=()=>{ setRole(null); initScreen(); render(); };
+function bindAdminLoginContent(){
   document.getElementById('form-admin-login').onsubmit=(e)=>{
     e.preventDefault();
     const val=document.getElementById('admin-pass').value;
     if(val===db.settings.adminPassword){
-      adminUnlocked=true; ui.loginError=''; ui.screen='admin'; render();
+      adminUnlocked=true; ui.loginError=''; render();
     } else {
       ui.loginError='Contraseña incorrecta.'; render();
     }
   };
 }
 
-/* =========================================================
-   PANEL DE ADMINISTRADOR
-========================================================= */
-function renderAdmin(){
+function renderAdminPanelContent(){
   const tabs=[['resumen','Resumen'],['pagos','Pagos semanales'],['alumnos','Alumnos'],['gastos','Gastos'],['eventos','Eventos'],['ajustes','Ajustes']];
   const tabsHtml=tabs.map(([k,l])=>`<div class="tab ${ui.adminTab===k?'active':''}" data-tab="${k}">${l}</div>`).join('');
-
   let body='';
   if(ui.adminTab==='resumen') body=renderAdminResumen();
   else if(ui.adminTab==='pagos') body=renderAdminPagos();
@@ -682,12 +734,11 @@ function renderAdmin(){
   else if(ui.adminTab==='eventos') body=renderAdminEventos();
   else if(ui.adminTab==='ajustes') body=renderAdminAjustes();
 
-  return `
-  <div class="topbar">
-    <div class="brand"><span class="dot"></span><span class="label">Panel del administrador</span></div>
-    <div class="who">Sesión de administrador<br><button id="btn-logout-admin">Cerrar sesión</button></div>
-  </div>
-  <div class="content">
+  return `<div class="content">
+    <div class="admin-session-bar">
+      <span>Sesión de administrador activa</span>
+      <button class="icon-btn" id="btn-lock-admin">Cerrar sesión</button>
+    </div>
     <div class="tabs">${tabsHtml}</div>
     ${body}
   </div>`;
@@ -701,7 +752,7 @@ function renderAdminResumen(){
     <div class="stat"><div class="num">${money(totalGastos())}</div><div class="lab">Total gastos</div></div>
     <div class="stat"><div class="num">${money(totalRecaudado()-totalGastos())}</div><div class="lab">Balance</div></div>
   </div>
-  ${pend>0?`<div class="banner">Tienes <strong>${pend}</strong> pago(s) esperando validación. Revisa la pestaña de <em>Pagos semanales</em> o <em>Eventos</em>.</div>`:''}
+  ${pend>0?`<div class="banner">Tienes <strong>${pend}</strong> pago(s) esperando validación. Revisa <em>Pagos semanales</em> o <em>Eventos</em>.</div>`:''}
   <div class="card">
     <h2>Alumnos registrados</h2>
     <div class="num" style="font-family:'Fraunces',serif;font-size:26px;color:var(--ink);">${db.students.length}</div>
@@ -714,19 +765,26 @@ function renderAdminPagos(){
   const mo=months[idx];
   const key=monthKey(mo.year,mo.month);
   const weeks=weeksOfMonth(mo.year,mo.month);
-
   const options=months.map((m,i)=>`<option value="${i}" ${i===idx?'selected':''}>${monthLabel(m.year,m.month)}</option>`).join('');
 
   let rows='';
+  let detailRows='';
   if(db.students.length===0){
     rows=`<tr><td colspan="${weeks.length+2}"><div class="empty">Aún no hay alumnos registrados.</div></td></tr>`;
   } else {
     rows=db.students.map(s=>{
       const cells=weeks.map((wd,wi)=>{
-        const status=(db.payments[s.id]&&db.payments[s.id][key]&&db.payments[s.id][key][wi])||'unpaid';
+        const entry=db.payments[s.id]&&db.payments[s.id][key]&&db.payments[s.id][key][wi];
+        const status=(entry&&entry.status)||'unpaid';
         const cls=status==='validated'?'validated':(status==='requested'?'requested':'');
         const label=status==='validated'?'✓':(status==='requested'?'…':'');
-        return `<td><div class="mini-circle ${cls}" onclick="cycleAdminWeek('${s.id}','${key}',${wi})">${label}</div></td>`;
+        if(status==='validated'&&entry.montoEntregado!=null){
+          const dif=Number(entry.montoEntregado)-db.settings.weeklyAmount;
+          const difTxt=dif>0?`Sobra ${money(dif)}`:(dif<0?`Falta ${money(-dif)}`:'Exacto');
+          detailRows+=`<div class="list-row"><div><div style="font-weight:600;">${s.nombre}</div><div class="meta">Semana del ${shortDate(wd)}</div></div><div class="amt">Entregó ${money(entry.montoEntregado)} · ${difTxt}</div></div>`;
+        }
+        const circleTitle=status==='validated'?('Entregó '+money(entry.montoEntregado)):'';
+        return `<td><div class="mini-circle clickable ${cls}" onclick="cycleAdminWeek('${s.id}','${key}',${wi})" title="${circleTitle}">${label}</div></td>`;
       }).join('');
       return `<tr>
         <td class="name-cell">${s.nombre}<div class="meta" style="font-weight:400;">Lista ${s.numLista}</div></td>
@@ -735,13 +793,12 @@ function renderAdminPagos(){
       </tr>`;
     }).join('');
   }
-
   const headWeeks=weeks.map(wd=>`<th>${shortDate(wd)}</th>`).join('');
 
   return `
   <div class="card">
     <h2>Pagos semanales</h2>
-    <p class="desc">Toca un círculo para cambiar su estado: sin pagar → esperando validación → pagada. Cuota semanal actual: <strong>${money(db.settings.weeklyAmount)}</strong> (edítala en Ajustes).</p>
+    <p class="desc">Toca un círculo para cambiar su estado: sin pagar → esperando validación → al validar, te pedirá el monto entregado. Cuota semanal actual: <strong>${money(db.settings.weeklyAmount)}</strong> (edítala en Ajustes).</p>
     <label style="font-size:12.5px;color:var(--muted);font-weight:600;">Mes</label>
     <select id="admin-month-select" style="padding:8px 10px;border-radius:8px;border:1px solid var(--line);margin-bottom:16px;">${options}</select>
     <div class="table-scroll">
@@ -750,25 +807,44 @@ function renderAdminPagos(){
         <tbody>${rows}</tbody>
       </table>
     </div>
+  </div>
+  <div class="card">
+    <h2>Detalle de pagos validados (${monthLabel(mo.year,mo.month)})</h2>
+    ${detailRows||'<div class="empty">Aún no hay pagos validados este mes.</div>'}
   </div>`;
 }
-
-function cycleAdminWeek(studentId,key,wi){
+async function cycleAdminWeek(studentId,key,wi){
   if(!db.payments[studentId]) db.payments[studentId]={};
   if(!db.payments[studentId][key]) db.payments[studentId][key]={};
-  const cur=db.payments[studentId][key][wi]||'unpaid';
-  const next=cur==='unpaid'?'requested':(cur==='requested'?'validated':'unpaid');
-  db.payments[studentId][key][wi]=next;
-  saveDB();
+  const entry=db.payments[studentId][key][wi]||{status:'unpaid'};
+  const cur=entry.status||'unpaid';
+  if(cur==='unpaid'){
+    db.payments[studentId][key][wi]={status:'requested'};
+    saveDB();
+    await sbUpsertPayment(studentId,key,wi,'requested',null,null);
+  } else if(cur==='requested'){
+    const debe=db.settings.weeklyAmount;
+    const input=prompt('¿Con cuánto pagó esta semana? (adeuda '+money(debe)+')');
+    if(input===null) return;
+    const montoEntregado=parseFloat(input);
+    if(isNaN(montoEntregado)){ alert('Ingresa un monto válido.'); return; }
+    const cambio=montoEntregado-debe;
+    db.payments[studentId][key][wi]={status:'validated',montoEntregado,cambio};
+    saveDB();
+    await sbUpsertPayment(studentId,key,wi,'validated',montoEntregado,cambio);
+  } else {
+    db.payments[studentId][key][wi]={status:'unpaid'};
+    saveDB();
+    await sbUpsertPayment(studentId,key,wi,'unpaid',null,null);
+  }
 }
-
 function confirmPaymentWhatsapp(studentId,key){
   const s=db.students.find(x=>x.id===studentId);
   const months=schoolMonths();
   const mo=months.find(m=>monthKey(m.year,m.month)===key);
   const weeks=weeksOfMonth(mo.year,mo.month);
   const payMonth=(db.payments[studentId]&&db.payments[studentId][key])||{};
-  const validatedWeeks=Object.keys(payMonth).filter(wi=>payMonth[wi]==='validated').map(wi=>shortDate(weeks[wi]));
+  const validatedWeeks=Object.keys(payMonth).filter(wi=>payMonth[wi]&&payMonth[wi].status==='validated').map(wi=>shortDate(weeks[wi]));
   if(validatedWeeks.length===0){ alert('Este alumno no tiene semanas validadas en '+monthLabel(mo.year,mo.month)+'.'); return; }
   const msg=`Hola ${s.nombrePadre}, se confirma el pago de ${s.nombre} (lista ${s.numLista}) correspondiente a ${monthLabel(mo.year,mo.month)} - semanas: ${validatedWeeks.join(', ')}. ¡Gracias!`;
   if(!s.whatsapp){ alert('Este alumno no tiene número de WhatsApp registrado.'); return; }
@@ -807,9 +883,27 @@ function renderAdminAlumnos(){
       </div>`;
     }).join('');
   }
-  return `<div class="card"><h2>Alumnos registrados</h2><p class="desc">Solo el administrador puede modificar los datos de un alumno una vez registrado.</p>${rows}</div>`;
+  return `<div class="card">
+    <h2>Alumnos registrados</h2>
+    <p class="desc">Solo el administrador puede modificar los datos de un alumno una vez registrado.</p>
+    ${rows}
+    <div style="margin-top:14px;">
+      ${ui.showStudentForm?`
+        <form class="inline-form" id="form-new-student">
+          <div><label>Nombre del alumno</label><input type="text" id="as-nombre" required placeholder="Nombre completo"></div>
+          <div><label>Número de lista</label><input type="number" id="as-lista" required min="1"></div>
+          <div><label>Nombre del padre / tutor</label><input type="text" id="as-padre" required placeholder="Nombre completo"></div>
+          <div><label>WhatsApp del padre / tutor</label><input type="tel" id="as-whatsapp" required placeholder="10 dígitos + lada"></div>
+          <div class="row-actions">
+            <button type="submit" class="btn small gold">Registrar alumno</button>
+            <button type="button" class="icon-btn" id="btn-cancel-student">Cancelar</button>
+          </div>
+        </form>`:`<button class="btn outline" id="btn-show-student-form">+ Registrar alumno</button>`}
+    </div>
+    <div class="hint">Un alumno registrado por ti aquí no queda ligado automáticamente al celular del padre; si el padre también se registra por su cuenta en la pestaña Registro, puede crear un duplicado. Si prefieres, dile al padre que no se registre y regístralo solo tú desde aquí.</div>
+  </div>`;
 }
-function saveStudentEdit(e,id){
+async function saveStudentEdit(e,id){
   e.preventDefault();
   const f=e.target;
   const s=db.students.find(x=>x.id===id);
@@ -819,14 +913,16 @@ function saveStudentEdit(e,id){
   s.whatsapp=f.whatsapp.value.trim();
   ui.editStudentId=null;
   saveDB();
+  await sbUpdateStudent(s);
   return false;
 }
-function deleteStudent(id){
+async function deleteStudent(id){
   if(!confirm('¿Eliminar a este alumno y su historial de pagos?')) return;
   db.students=db.students.filter(s=>s.id!==id);
   delete db.payments[id];
   db.events.forEach(ev=>{ if(ev.pagos) delete ev.pagos[id]; });
   saveDB();
+  await sbDeleteStudent(id); // los pagos relacionados se borran en cascada en Supabase
 }
 
 function renderAdminGastos(){
@@ -876,18 +972,20 @@ function renderAdminGastos(){
     </div>
   </div>`;
 }
-function saveExpenseEdit(e,id){
+async function saveExpenseEdit(e,id){
   e.preventDefault();
   const f=e.target;
   const ex=db.expenses.find(x=>x.id===id);
   ex.nombre=f.nombre.value.trim(); ex.fecha=f.fecha.value; ex.monto=parseFloat(f.monto.value)||0;
   ui.editExpenseId=null; saveDB();
+  await sbUpdateExpense(ex);
   return false;
 }
-function deleteExpense(id){
+async function deleteExpense(id){
   if(!confirm('¿Eliminar este gasto?')) return;
   db.expenses=db.expenses.filter(e=>e.id!==id);
   saveDB();
+  await sbDeleteExpense(id);
 }
 
 function renderAdminEventos(){
@@ -898,13 +996,20 @@ function renderAdminEventos(){
     rows=db.events.map(ev=>{
       const cuota=eventCuota(ev);
       const studentRows=db.students.length? db.students.map(s=>{
-        const status=(ev.pagos&&ev.pagos[s.id])||'unpaid';
+        const entry=ev.pagos&&ev.pagos[s.id];
+        const status=(entry&&entry.status)||'unpaid';
         const cls=status==='validated'?'validated':(status==='requested'?'requested':'');
-        const label=status==='validated'?'✓ Pagado':(status==='requested'?'Esperando validación':'Sin pagar');
+        let label=status==='validated'?'✓ Pagado':(status==='requested'?'Esperando validación':'Sin pagar');
+        let montoLine='';
+        if(status==='validated'&&entry.montoEntregado!=null){
+          const dif=Number(entry.montoEntregado)-eventCuota(ev);
+          const difTxt=dif>0?`Sobra ${money(dif)}`:(dif<0?`Falta ${money(-dif)}`:'Exacto');
+          montoLine=`<div class="meta">Entregó ${money(entry.montoEntregado)} · ${difTxt}</div>`;
+        }
         return `<div class="list-row">
-          <div>${s.nombre} <span class="meta">(lista ${s.numLista})</span></div>
+          <div>${s.nombre} <span class="meta">(lista ${s.numLista})</span>${montoLine}</div>
           <div class="row-actions">
-            <span class="mini-circle ${cls}" onclick="cycleEventPayment('${ev.id}','${s.id}')" title="${label}">${status==='validated'?'✓':(status==='requested'?'…':'')}</span>
+            <span class="mini-circle clickable ${cls}" onclick="cycleEventPayment('${ev.id}','${s.id}')" title="${label}">${status==='validated'?'✓':(status==='requested'?'…':'')}</span>
             <button class="icon-btn" onclick="confirmEventWhatsapp('${ev.id}','${s.id}')">WhatsApp</button>
           </div>
         </div>`;
@@ -939,25 +1044,45 @@ function renderAdminEventos(){
   </div>
   ${rows}`;
 }
-function cycleEventPayment(eventId,studentId){
+async function cycleEventPayment(eventId,studentId){
   const ev=db.events.find(e=>e.id===eventId);
   if(!ev.pagos) ev.pagos={};
-  const cur=ev.pagos[studentId]||'unpaid';
-  ev.pagos[studentId]=cur==='unpaid'?'requested':(cur==='requested'?'validated':'unpaid');
-  saveDB();
+  const entry=ev.pagos[studentId]||{status:'unpaid'};
+  const cur=entry.status||'unpaid';
+  if(cur==='unpaid'){
+    ev.pagos[studentId]={status:'requested'};
+    saveDB();
+    await sbUpsertEventPayment(eventId,studentId,'requested',null,null);
+  } else if(cur==='requested'){
+    const debe=eventCuota(ev);
+    const input=prompt('¿Con cuánto pagó este evento? (adeuda '+money(debe)+')');
+    if(input===null) return;
+    const montoEntregado=parseFloat(input);
+    if(isNaN(montoEntregado)){ alert('Ingresa un monto válido.'); return; }
+    const cambio=montoEntregado-debe;
+    ev.pagos[studentId]={status:'validated',montoEntregado,cambio};
+    saveDB();
+    await sbUpsertEventPayment(eventId,studentId,'validated',montoEntregado,cambio);
+  } else {
+    ev.pagos[studentId]={status:'unpaid'};
+    saveDB();
+    await sbUpsertEventPayment(eventId,studentId,'unpaid',null,null);
+  }
 }
 function confirmEventWhatsapp(eventId,studentId){
   const ev=db.events.find(e=>e.id===eventId);
   const s=db.students.find(x=>x.id===studentId);
-  if((ev.pagos&&ev.pagos[studentId])!=='validated'){ alert('Este pago aún no está validado.'); return; }
+  const entry=ev.pagos&&ev.pagos[studentId];
+  if(!entry||entry.status!=='validated'){ alert('Este pago aún no está validado.'); return; }
   if(!s.whatsapp){ alert('Este alumno no tiene número de WhatsApp registrado.'); return; }
   const msg=`Hola ${s.nombrePadre}, se confirma el pago de ${s.nombre} para el evento "${ev.nombre}" por ${money(eventCuota(ev))}. ¡Gracias!`;
   window.open(waLink(s.whatsapp,msg),'_blank');
 }
-function deleteEvent(id){
+async function deleteEvent(id){
   if(!confirm('¿Eliminar este evento?')) return;
   db.events=db.events.filter(e=>e.id!==id);
   saveDB();
+  await sbDeleteEvent(id);
 }
 
 function renderAdminAjustes(){
@@ -965,26 +1090,17 @@ function renderAdminAjustes(){
   <div class="card">
     <h2>Configuración</h2>
     <form class="inline-form" id="form-settings">
-      <div>
-        <label>Cuota semanal por alumno</label>
-        <input type="number" step="0.01" id="set-weekly" value="${db.settings.weeklyAmount}">
-      </div>
-      <div>
-        <label>WhatsApp del administrador (recibe solicitudes de validación)</label>
-        <input type="tel" id="set-whatsapp" value="${db.settings.adminWhatsapp}" placeholder="10 dígitos + lada">
-      </div>
-      <div>
-        <label>Cambiar contraseña de administrador</label>
-        <input type="text" id="set-password" value="${db.settings.adminPassword}">
-      </div>
+      <div><label>Cuota semanal por alumno</label><input type="number" step="0.01" id="set-weekly" value="${db.settings.weeklyAmount}"></div>
+      <div><label>WhatsApp del administrador (recibe solicitudes de validación)</label><input type="tel" id="set-whatsapp" value="${db.settings.adminWhatsapp}" placeholder="10 dígitos + lada"></div>
+      <div><label>Cambiar contraseña de administrador</label><input type="text" id="set-password" value="${db.settings.adminPassword}"></div>
       <button type="submit" class="btn gold">Guardar cambios</button>
     </form>
     <div class="hint">Esta contraseña se guarda solo en este dispositivo/navegador; no ofrece seguridad de nivel bancario.</div>
   </div>`;
 }
 
-function bindAdmin(){
-  document.getElementById('btn-logout-admin').onclick=()=>{ adminUnlocked=false; setRole(null); initScreen(); render(); };
+function bindAdminPanelContent(){
+  document.getElementById('btn-lock-admin').onclick=()=>{ adminUnlocked=false; goHome(); };
   document.querySelectorAll('.tab').forEach(t=>{
     t.onclick=()=>{ ui.adminTab=t.dataset.tab; render(); };
   });
@@ -994,18 +1110,43 @@ function bindAdmin(){
     if(sel) sel.onchange=()=>{ ui.adminPayMonthIdx=parseInt(sel.value,10); render(); };
   }
 
+  if(ui.adminTab==='alumnos'){
+    const showBtn=document.getElementById('btn-show-student-form');
+    if(showBtn) showBtn.onclick=()=>{ ui.showStudentForm=true; render(); };
+    const cancelBtn=document.getElementById('btn-cancel-student');
+    if(cancelBtn) cancelBtn.onclick=()=>{ ui.showStudentForm=false; render(); };
+    const form=document.getElementById('form-new-student');
+    if(form) form.onsubmit=async(e)=>{
+      e.preventDefault();
+      const nombre=document.getElementById('as-nombre').value.trim();
+      const numLista=document.getElementById('as-lista').value.trim();
+      const nombrePadre=document.getElementById('as-padre').value.trim();
+      const whatsapp=document.getElementById('as-whatsapp').value.trim();
+      if(!nombre||!numLista||!nombrePadre||!whatsapp) return;
+      const submitBtn=form.querySelector('button[type="submit"]');
+      submitBtn.disabled=true; submitBtn.textContent='Guardando…';
+      const id=await sbInsertStudent({nombre,numLista,nombrePadre,whatsapp});
+      if(!id){ submitBtn.disabled=false; submitBtn.textContent='Registrar alumno'; return; }
+      db.students.push({id,nombre,numLista,nombrePadre,whatsapp,createdAt:Date.now()});
+      ui.showStudentForm=false;
+      saveDB();
+    };
+  }
+
   if(ui.adminTab==='gastos'){
     const showBtn=document.getElementById('btn-show-expense-form');
     if(showBtn) showBtn.onclick=()=>{ ui.showExpenseForm=true; render(); };
     const cancelBtn=document.getElementById('btn-cancel-expense');
     if(cancelBtn) cancelBtn.onclick=()=>{ ui.showExpenseForm=false; render(); };
     const form=document.getElementById('form-new-expense');
-    if(form) form.onsubmit=(e)=>{
+    if(form) form.onsubmit=async(e)=>{
       e.preventDefault();
       const nombre=document.getElementById('ex-nombre').value.trim();
       const fecha=document.getElementById('ex-fecha').value;
       const monto=parseFloat(document.getElementById('ex-monto').value)||0;
-      db.expenses.push({ id:uid(), nombre, fecha, monto });
+      const id=await sbInsertExpense({nombre,fecha,monto});
+      if(!id) return;
+      db.expenses.push({ id, nombre, fecha, monto });
       ui.showExpenseForm=false;
       saveDB();
     };
@@ -1017,24 +1158,27 @@ function bindAdmin(){
     const cancelBtn=document.getElementById('btn-cancel-event');
     if(cancelBtn) cancelBtn.onclick=()=>{ ui.showEventForm=false; render(); };
     const form=document.getElementById('form-new-event');
-    if(form) form.onsubmit=(e)=>{
+    if(form) form.onsubmit=async(e)=>{
       e.preventDefault();
       const nombre=document.getElementById('ev-nombre').value.trim();
       const fecha=document.getElementById('ev-fecha').value;
       const montoTotal=parseFloat(document.getElementById('ev-monto').value)||0;
-      db.events.push({ id:uid(), nombre, fecha, montoTotal, pagos:{} });
+      const id=await sbInsertEvent({nombre,fecha,montoTotal});
+      if(!id) return;
+      db.events.push({ id, nombre, fecha, montoTotal, pagos:{} });
       ui.showEventForm=false;
       saveDB();
     };
   }
 
   if(ui.adminTab==='ajustes'){
-    document.getElementById('form-settings').onsubmit=(e)=>{
+    document.getElementById('form-settings').onsubmit=async(e)=>{
       e.preventDefault();
       db.settings.weeklyAmount=parseFloat(document.getElementById('set-weekly').value)||0;
       db.settings.adminWhatsapp=document.getElementById('set-whatsapp').value.trim();
       db.settings.adminPassword=document.getElementById('set-password').value.trim()||db.settings.adminPassword;
       saveDB();
+      await sbUpdateSettings(db.settings);
       alert('Configuración guardada.');
     };
   }
@@ -1043,8 +1187,7 @@ function bindAdmin(){
 /* =========================================================
    ARRANQUE
 ========================================================= */
-initScreen();
-render();
+initApp();
 </script>
 </body>
 </html>
